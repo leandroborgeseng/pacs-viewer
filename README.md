@@ -105,7 +105,7 @@ docker compose up --build
 - API: `http://localhost:3001/api`  
 - Orthanc: `http://localhost:8042`
 
-O **seed** (`prisma/seed.js`) corre **automaticamente** após `prisma migrate deploy` em cada arranque da API (Dockerfile / Railway). É idempotente (`upsert`). Para correr só o seed manualmente: `cd api && npx prisma db seed`.
+O **seed** (`prisma/seed.js`) corre **automaticamente** após `prisma migrate deploy` em cada arranque da API (Dockerfile / Railway). Nos três e-mails de demo, o `upsert` **atualiza** `passwordHash` e `active` — útil se a base já tinha utilizadores com password errada; em produção real mude passwords ou remova o seed automático.
 
 ## Integração OHIF ↔ JWT
 
