@@ -1,5 +1,6 @@
 import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
@@ -34,7 +35,17 @@ function assertRequiredEnv() {
 
 async function bootstrap() {
   assertRequiredEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('/', (_req, res) => {
+    res.status(200).json({
+      service: 'pacs-viewer-api',
+      health: '/health',
+      healthz: '/healthz',
+      api: '/api',
+      hint: 'O portal web (Next.js) é outro serviço; isto é só a API REST.',
+    });
+  });
   app.setGlobalPrefix('api', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },
