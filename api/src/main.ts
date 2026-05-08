@@ -58,9 +58,45 @@ async function bootstrap() {
     .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);
   console.log(`[bootstrap] CORS: ${origins.join(' | ') || '(lista vazia — defina WEB_ORIGIN)'}`);
+
+  const allowRailwayPublic =
+    process.env.CORS_ALLOW_RAILWAY_PUBLIC !== '0' &&
+    process.env.NODE_ENV === 'production';
+
+  function isRailwayPublicHostname(hostname: string): boolean {
+    return (
+      hostname === 'up.railway.app' || hostname.endsWith('.up.railway.app')
+    );
+  }
+
   app.enableCors({
-    origin: origins,
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) {
+        callback(null, true);
+        return;
+      }
+      const normalized = requestOrigin.replace(/\/+$/, '');
+      if (origins.includes(normalized)) {
+        callback(null, true);
+        return;
+      }
+      if (allowRailwayPublic) {
+        try {
+          const { hostname, protocol } = new URL(normalized);
+          if (protocol === 'https:' && isRailwayPublicHostname(hostname)) {
+            callback(null, true);
+            return;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      console.warn(`[bootstrap] CORS recusado: ${normalized}`);
+      callback(null, false);
+    },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
   app.use(cookieParser());
   app.useGlobalPipes(

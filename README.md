@@ -125,7 +125,7 @@ Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o brow
 
 - `DATABASE_URL` — ligar o plugin **PostgreSQL** ao serviço e usar a URL que o Railway gera (referência ` ${{ Postgres.DATABASE_URL }}` ou copiar do plugin).
 - `JWT_SECRET` — string longa e aleatória (ex. 32+ caracteres). Sem isto, o arranque falha em ciclo com `[bootstrap] … JWT_SECRET` nos Deploy Logs.
-- `WEB_ORIGIN` — URL **exata** do frontend (ex. `https://xxx.up.railway.app`). **Sem barra no fim.** Se o browser mostrar erro de rede no login, compara com o valor nos Deploy Logs da API (`[bootstrap] CORS: …`). Podes listar vários separados por vírgula.
+- `WEB_ORIGIN` — URL **exata** do frontend (ex. `https://xxx.up.railway.app`). **Sem barra no fim.** Em **produção** (`NODE_ENV=production`), pedidos HTTPS vindos de **qualquer** `*.up.railway.app` também são aceites por CORS (Railway), salvo se definires `CORS_ALLOW_RAILWAY_PUBLIC=0`. Usa `WEB_ORIGIN` para dev local e restringir origens em deploy próprio.
 - `PORT` — normalmente injetado pelo Railway; não apagar.
 
 **Não definir no serviço da API** (não são lidas pelo Nest e confundem o painel): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_OHIF_BASE_PATH`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — basta **`DATABASE_URL`** (já inclui user/password do Postgres). As `NEXT_PUBLIC_*` são só do **build do Web**.
