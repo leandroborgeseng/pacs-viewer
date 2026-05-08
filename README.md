@@ -128,6 +128,15 @@ Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o brow
 - `WEB_ORIGIN` — URL **exata** do frontend (ex. `https://xxx.up.railway.app`). **Sem barra no fim.** Se o browser mostrar erro de rede no login, compara com o valor nos Deploy Logs da API (`[bootstrap] CORS: …`). Podes listar vários separados por vírgula.
 - `PORT` — normalmente injetado pelo Railway; não apagar.
 
+**Não definir no serviço da API** (não são lidas pelo Nest e confundem o painel): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_OHIF_BASE_PATH`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — basta **`DATABASE_URL`** (já inclui user/password do Postgres). As `NEXT_PUBLIC_*` são só do **build do Web**.
+
+| Serviço | Variáveis (resumo) |
+|---------|-------------------|
+| **API** | `DATABASE_URL`, `JWT_SECRET`, **`WEB_ORIGIN`** (URL HTTPS do **portal Web**, sem `/` no fim), opcional `ORTHANC_DICOMWEB_ROOT` / credenciais Orthanc |
+| **Web** | `NEXT_PUBLIC_API_URL` (URL HTTPS da **API**, pode terminar em `/api`), `NEXT_PUBLIC_OHIF_BASE_PATH=/ohif` |
+
+Exemplo: se a API pública for `https://pacs-viewer-production.up.railway.app` e o portal `https://pacs-viewer-web-production.up.railway.app`, então **na API** defines `WEB_ORIGIN=https://pacs-viewer-web-production.up.railway.app` e **no Web** defines `NEXT_PUBLIC_API_URL=https://pacs-viewer-production.up.railway.app/api`.
+
 Se o healthcheck falhar, abra **Deploy Logs**: mensagens como `Variável obrigatória em falta` ou erros de `prisma migrate` / `P1001` indicam base ou rede.
 
 1. Serviços recomendados: **PostgreSQL**, **API** (`api/Dockerfile`), **Web** (`web/Dockerfile`). Já **não** é necessário um serviço OHIF à parte.  
