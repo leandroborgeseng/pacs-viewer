@@ -13,8 +13,13 @@ function assertRequiredEnv() {
   }
   if (missing.length > 0) {
     console.error(
-      `[bootstrap] Defina estas variáveis no Railway (ou .env): ${missing.join(', ')}`,
+      `[bootstrap] Variáveis em falta: ${missing.join(', ')}. O processo termina sem iniciar o servidor.`,
     );
+    if (missing.includes('JWT_SECRET')) {
+      console.error(
+        '[bootstrap] Railway → serviço da API → Variables → New Variable → nome JWT_SECRET, valor: string aleatória longa (ex.: openssl rand -hex 32).',
+      );
+    }
     process.exit(1);
   }
 }

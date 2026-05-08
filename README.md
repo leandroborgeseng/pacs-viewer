@@ -128,7 +128,7 @@ Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o brow
 **API — variáveis obrigatórias** (sem isto o processo morre antes do `/health`):
 
 - `DATABASE_URL` — ligar o plugin **PostgreSQL** ao serviço e usar a URL que o Railway gera (referência ` ${{ Postgres.DATABASE_URL }}` ou copiar do plugin).
-- `JWT_SECRET` — string longa e aleatória (ex. 32+ caracteres).
+- `JWT_SECRET` — string longa e aleatória (ex. 32+ caracteres). Sem isto, o arranque falha em ciclo com `[bootstrap] … JWT_SECRET` nos Deploy Logs.
 - `WEB_ORIGIN` — URL pública do frontend (pode ser o domínio `*.up.railway.app` do serviço Web).
 - `PORT` — normalmente injetado pelo Railway; não apagar.
 
