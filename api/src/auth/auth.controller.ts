@@ -11,6 +11,17 @@ export class AuthController {
   constructor(private auth: AuthService) {}
 
   @Public()
+  @Get('login')
+  loginHint() {
+    return {
+      message:
+        'Use POST com Content-Type: application/json e corpo { "email", "password" }. Abrir esta URL no browser (GET) não faz login.',
+      method: 'POST',
+      path: '/api/auth/login',
+    };
+  }
+
+  @Public()
   @Post('login')
   login(@Body() dto: LoginDto, @Req() req: Request) {
     const ip = req.ip;
