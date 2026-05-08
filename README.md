@@ -105,11 +105,7 @@ docker compose up --build
 - API: `http://localhost:3001/api`  
 - Orthanc: `http://localhost:8042`
 
-Após o primeiro arranque, execute o seed **uma vez**:
-
-```bash
-docker compose exec api npx prisma db seed
-```
+O **seed** (`prisma/seed.js`) corre **automaticamente** após `prisma migrate deploy` em cada arranque da API (Dockerfile / Railway). É idempotente (`upsert`). Para correr só o seed manualmente: `cd api && npx prisma db seed`.
 
 ## Integração OHIF ↔ JWT
 

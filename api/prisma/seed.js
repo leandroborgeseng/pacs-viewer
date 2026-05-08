@@ -1,5 +1,5 @@
-import { PrismaClient, Role } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+const { PrismaClient, Role } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,7 @@ async function main() {
   const medicoHash = await bcrypt.hash('Medico123!', 10);
   const pacienteHash = await bcrypt.hash('Paciente123!', 10);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@portal.local' },
     update: {},
     create: {
@@ -19,7 +19,7 @@ async function main() {
     },
   });
 
-  const medico = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'medico@portal.local' },
     update: {},
     create: {
@@ -70,6 +70,10 @@ async function main() {
     },
   });
 
+  const medico = await prisma.user.findUniqueOrThrow({
+    where: { email: 'medico@portal.local' },
+  });
+
   await prisma.studyPermission.upsert({
     where: {
       userId_studyId: { userId: medico.id, studyId: study.id },
@@ -82,14 +86,13 @@ async function main() {
   });
 
   console.log(
-    'Seed concluído. Defina SEED_STUDY_INSTANCE_UID com um UID real do Orthanc.',
+    'Seed concluído. Contas: admin@portal.local, medico@portal.local, paciente@portal.local (ver README). Opcional: SEED_STUDY_INSTANCE_UID para UID Orthanc.',
   );
 }
 
 main()
   .then(() => prisma.$disconnect())
   .catch(async (e) => {
-    // eslint-disable-next-line no-console
     console.error(e);
     await prisma.$disconnect();
     process.exit(1);

@@ -30,4 +30,4 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY api/prisma ./prisma
 EXPOSE 3000
-CMD ["sh", "-c", "if [ -z \"${DATABASE_URL}\" ]; then echo 'ERRO: DATABASE_URL não definida. No Railway: crie o plugin PostgreSQL e adicione a variável DATABASE_URL (referência ao URL da base deste projeto).' >&2; exit 1; fi; npx prisma migrate deploy && exec node dist/main.js"]
+CMD ["sh", "-c", "if [ -z \"${DATABASE_URL}\" ]; then echo 'ERRO: DATABASE_URL não definida. No Railway: crie o plugin PostgreSQL e adicione a variável DATABASE_URL (referência ao URL da base deste projeto).' >&2; exit 1; fi; npx prisma migrate deploy && npx prisma db seed && exec node dist/main.js"]
