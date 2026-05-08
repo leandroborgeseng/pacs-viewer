@@ -138,7 +138,7 @@ Se o healthcheck falhar, abra **Deploy Logs**: mensagens como `Variável obrigat
 2. Na API: `DATABASE_URL`, `JWT_SECRET`, `WEB_ORIGIN` (URL exata do frontend), `ORTHANC_DICOMWEB_ROOT`, e credenciais Orthanc se necessário.  
 3. Na Web — variáveis de **build**: `NEXT_PUBLIC_API_URL` (URL HTTPS da API + `/api`), `NEXT_PUBLIC_OHIF_BASE_PATH=/ohif`. A imagem final usa Next **standalone**; o arranque é `node server.js` (ver `web/railway.json` — não use `npm run start` no deploy).  
 4. O **contexto de build** é sempre a **raiz do Git**; os Dockerfiles usam os prefixos `api/` e `web/`. Não defina “Root Directory” só para `api` a menos que duplique esta lógica.  
-5. `railway.json` na raiz é orientado à API; use `web/railway.json` como referência para o serviço frontend. Healthcheck da API: `GET /health`.
+5. `railway.json` na raiz é orientado à API; o ficheiro `web/railway.json` assume **raiz do Git** como contexto de build e `dockerfilePath: web/Dockerfile`. Se no serviço Web definires **Root Directory** = `web`, altera o path do Dockerfile para `Dockerfile`.
 
 Em produção use HTTPS; o `app-config.js` incorpora a URL da API definida no momento do build.
 
