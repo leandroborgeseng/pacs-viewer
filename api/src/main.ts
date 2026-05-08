@@ -19,6 +19,14 @@ function assertRequiredEnv() {
       console.error(
         '[bootstrap] Railway → serviço da API → Variables → New Variable → nome JWT_SECRET, valor: string aleatória longa (ex.: openssl rand -hex 32).',
       );
+      const jwtLike = Object.keys(process.env).filter(
+        (k) => k !== 'JWT_SECRET' && /jwt/i.test(k),
+      );
+      if (jwtLike.length > 0) {
+        console.error(
+          `[bootstrap] Atenção: existem outras variáveis com "jwt" no nome (${jwtLike.join(', ')}). O Nest espera o nome exato JWT_SECRET (maiúsculas).`,
+        );
+      }
     }
     process.exit(1);
   }
