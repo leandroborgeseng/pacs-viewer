@@ -119,6 +119,12 @@ Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o brow
 
 ## Railway
 
+**Ligar PostgreSQL no Railway**
+
+1. No projeto, **Add → Database → PostgreSQL**.  
+2. No serviço **API** → **Variables** → **Add variable Reference** → escolha o Postgres e o campo **`DATABASE_URL`** (ou copie a URL do separador Variables do Postgres).  
+3. Sem `DATABASE_URL`, o `prisma migrate` na arranque falha com **P1012** (como nos teus logs).
+
 **API — variáveis obrigatórias** (sem isto o processo morre antes do `/health`):
 
 - `DATABASE_URL` — ligar o plugin **PostgreSQL** ao serviço e usar a URL que o Railway gera (referência ` ${{ Postgres.DATABASE_URL }}` ou copiar do plugin).
