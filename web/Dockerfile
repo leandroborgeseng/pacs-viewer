@@ -41,7 +41,8 @@ RUN node scripts/write-ohif-app-config.mjs \
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=3000
+# Next standalone usa process.env.PORT (Railway injeta isto; raramente é 3000).
+# Não forces no painel do Railway "porta interna 3000" sem bater certo com o PORT do contentor.
 ENV HOSTNAME=0.0.0.0
 
 RUN addgroup --system --gid 1001 nodejs \
@@ -53,4 +54,5 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000
+# Sem PORT no ambiente, o server.js do Next usa 3000 (útil em docker compose local).
 CMD ["node", "server.js"]

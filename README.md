@@ -142,6 +142,8 @@ Se o healthcheck falhar, abra **Deploy Logs**: mensagens como `Variável obrigat
 
 Em produção use HTTPS; o `app-config.js` incorpora a URL da API definida no momento do build.
 
+**502 no domínio público do serviço Web** — o proxy do Railway encaminha para **a mesma porta em que o Node está a ouvir** (`process.env.PORT` injetado pelo Railway). Se no **Networking** definires manualmente **“porta 3000”** mas o Railway tiver definido `PORT` para outro valor (ex. `8080`), nada ouve na 3000 e aparece **502**. **Correção:** no serviço **Web** → **Networking**, remove a porta personalizada e volta a **gerar o domínio** (configuração por defeito), *ou* define **Target port = `$PORT`** / o valor que Railway mostra nas docs, *ou* garante explicitamente nas **Variables** `PORT=3000` **e** target 3000 — mas o mais simples é **não forçar 3000** e deixar o Railway alinhar com `PORT`. Confirma nos **Deploy Logs** que `node server.js` arrancou sem erro.
+
 ## Endpoints REST principais (prefixo `/api`)
 
 - `POST /api/auth/login` — JWT.  
