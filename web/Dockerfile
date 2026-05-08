@@ -1,4 +1,7 @@
-# --- OHIF Viewer v3: estáticos com prefixo /ohif/ ---
+# Build a partir da RAIZ do monorepo:
+#   docker build -f web/Dockerfile .
+
+# --- OHIF Viewer v3 ---
 FROM node:18-bookworm-slim AS ohif-builder
 ARG OHIF_VERSION=v3.8.3
 RUN apt-get update \
@@ -16,16 +19,16 @@ ENV NODE_ENV=production
 RUN yarn install --network-timeout 300000 \
   && yarn run build
 
-# --- Next.js ---
+# --- Next.js deps ---
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY web/package.json web/package-lock.json* ./
 RUN npm ci
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY web/ .
 COPY --from=ohif-builder /usr/src/app/platform/app/dist ./public/ohif
 ARG NEXT_PUBLIC_API_URL=http://127.0.0.1:3001/api
 ARG NEXT_PUBLIC_OHIF_BASE_PATH=/ohif
@@ -34,7 +37,7 @@ ENV NEXT_PUBLIC_OHIF_BASE_PATH=${NEXT_PUBLIC_OHIF_BASE_PATH}
 RUN node scripts/write-ohif-app-config.mjs \
   && npm run build
 
-# --- Produção: Next.js standalone (imagem final mínima) ---
+# --- Next.js standalone ---
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production

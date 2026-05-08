@@ -1,0 +1,11 @@
+# Contexto Docker = raiz do monorepo (api/Dockerfile, web/Dockerfile)
+.git
+**/.DS_Store
+
+**/node_modules
+api/node_modules
+web/node_modules
+api/dist
+web/.next
+
+web/public/ohif

@@ -22,8 +22,8 @@ services:
 
   api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/Dockerfile
     restart: unless-stopped
     environment:
       PORT: 3000
@@ -40,8 +40,8 @@ services:
 
   web:
     build:
-      context: ./web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:3001/api
         NEXT_PUBLIC_OHIF_BASE_PATH: /ohif
