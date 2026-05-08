@@ -3,7 +3,24 @@ import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
+function assertRequiredEnv() {
+  const missing: string[] = [];
+  for (const key of ['DATABASE_URL', 'JWT_SECRET'] as const) {
+    const v = process.env[key];
+    if (v === undefined || String(v).trim() === '') {
+      missing.push(key);
+    }
+  }
+  if (missing.length > 0) {
+    console.error(
+      `[bootstrap] Defina estas variáveis no Railway (ou .env): ${missing.join(', ')}`,
+    );
+    process.exit(1);
+  }
+}
+
 async function bootstrap() {
+  assertRequiredEnv();
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api', {
     exclude: [
@@ -25,10 +42,13 @@ async function bootstrap() {
     }),
   );
   const port = Number(process.env.PORT ?? 3000);
-  await app.listen(port);
+  const host = process.env.HOST ?? '0.0.0.0';
+  await app.listen(port, host);
+  console.log(`[bootstrap] API a ouvir em http://${host}:${port} (health: /health)`);
 }
 
 bootstrap().catch((err) => {
+  console.error('[bootstrap] Falha ao iniciar — veja DATABASE_URL, JWT_SECRET e Deploy Logs.');
   console.error(err);
   process.exit(1);
 });

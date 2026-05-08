@@ -119,6 +119,15 @@ Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o brow
 
 ## Railway
 
+**API — variáveis obrigatórias** (sem isto o processo morre antes do `/health`):
+
+- `DATABASE_URL` — ligar o plugin **PostgreSQL** ao serviço e usar a URL que o Railway gera (referência ` ${{ Postgres.DATABASE_URL }}` ou copiar do plugin).
+- `JWT_SECRET` — string longa e aleatória (ex. 32+ caracteres).
+- `WEB_ORIGIN` — URL pública do frontend (pode ser o domínio `*.up.railway.app` do serviço Web).
+- `PORT` — normalmente injetado pelo Railway; não apagar.
+
+Se o healthcheck falhar, abra **Deploy Logs**: mensagens como `Variável obrigatória em falta` ou erros de `prisma migrate` / `P1001` indicam base ou rede.
+
 1. Serviços recomendados: **PostgreSQL**, **API** (`api/Dockerfile`), **Web** (`web/Dockerfile`). Já **não** é necessário um serviço OHIF à parte.  
 2. Na API: `DATABASE_URL`, `JWT_SECRET`, `WEB_ORIGIN` (URL exata do frontend), `ORTHANC_DICOMWEB_ROOT`, e credenciais Orthanc se necessário.  
 3. Na Web — variáveis de **build**: `NEXT_PUBLIC_API_URL` (URL HTTPS da API + `/api`), `NEXT_PUBLIC_OHIF_BASE_PATH=/ohif`. A imagem final usa Next **standalone**; o arranque é `node server.js` (ver `web/railway.json` — não use `npm run start` no deploy).  
