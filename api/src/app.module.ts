@@ -7,7 +7,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { DicomWebModule } from './dicom-web/dicom-web.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
-import { HealthController, HealthzController } from './health/health.controller';
+import { HealthController, HealthzController, ApiRootController } from './health/health.controller';
 import { PatientsModule } from './patients/patients.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -32,7 +32,7 @@ import { UsersModule } from './users/users.module';
     AuditModule,
     DicomWebModule,
   ],
-  controllers: [HealthController, HealthzController],
+  controllers: [HealthController, HealthzController, ApiRootController],
   providers: [
     {
       provide: APP_GUARD,

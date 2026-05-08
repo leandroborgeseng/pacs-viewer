@@ -21,3 +21,20 @@ export class HealthzController {
     return { status: 'ok' };
   }
 }
+
+/** Resposta útil em GET /api (não confundir com a raiz do site, que é só JSON). */
+@SkipThrottle()
+@Controller()
+export class ApiRootController {
+  @Public()
+  @Get()
+  apiRoot() {
+    return {
+      service: 'pacs-viewer-api',
+      message:
+        'REST sob este prefixo. Ex.: POST /api/auth/login, GET /api/auth/me, GET /api/studies/me',
+      health: '/health',
+      healthz: '/healthz',
+    };
+  }
+}
