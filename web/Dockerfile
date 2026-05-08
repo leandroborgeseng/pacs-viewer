@@ -57,5 +57,5 @@ RUN chmod +x /docker-entrypoint.sh
 
 USER nextjs
 EXPOSE 3000
-# Imprime PORT efetivo nos Deploy Logs (Railway) antes do Next subir.
-CMD ["/docker-entrypoint.sh"]
+# sh explícito: evita falhas se o bit +x ou o shebang não forem respeitados no runtime.
+CMD ["/bin/sh", "/docker-entrypoint.sh"]
