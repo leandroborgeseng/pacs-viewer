@@ -53,8 +53,13 @@ async function bootstrap() {
     ],
   });
   const origin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+  const origins = origin
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+  console.log(`[bootstrap] CORS: ${origins.join(' | ') || '(lista vazia — defina WEB_ORIGIN)'}`);
   app.enableCors({
-    origin: origin.split(',').map((o) => o.trim()),
+    origin: origins,
     credentials: true,
   });
   app.use(cookieParser());

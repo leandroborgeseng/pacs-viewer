@@ -53,12 +53,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshMe]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) throw new Error("Falha no login");
+    let res: Response;
+    try {
+      res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+    } catch {
+      throw new Error(
+        `Sem ligação à API (${API_URL}). Confirme NEXT_PUBLIC_API_URL, HTTPS e CORS (WEB_ORIGIN na API).`,
+      );
+    }
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const body = (await res.json()) as {
+          message?: string | string[];
+        };
+        const m = body.message;
+        detail = Array.isArray(m) ? m.join("; ") : (m ?? "");
+      } catch {
+        /* ignore */
+      }
+      throw new Error(
+        detail || `Resposta da API: ${res.status}. Verifique URL e credenciais.`,
+      );
+    }
     const data = (await res.json()) as {
       access_token: string;
       user: ApiUser;

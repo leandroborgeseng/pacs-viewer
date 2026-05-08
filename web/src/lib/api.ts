@@ -1,5 +1,14 @@
-export const API_URL =
+const raw =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+
+/** Garante sufixo `/api` (erro típico no Railway: falta `/api` na variável). */
+function normalizeApiBase(url: string): string {
+  const trimmed = url.trim().replace(/\/+$/, "");
+  if (trimmed.endsWith("/api")) return trimmed;
+  return `${trimmed}/api`;
+}
+
+export const API_URL = normalizeApiBase(raw);
 
 const TOKEN_KEY = "portal_token";
 

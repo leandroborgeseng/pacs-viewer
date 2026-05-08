@@ -27,8 +27,10 @@ export default function LoginPage() {
       await login(email, password);
       toast.success("Sessão iniciada");
       router.replace("/dashboard");
-    } catch {
-      toast.error("Credenciais inválidas ou servidor indisponível");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Credenciais inválidas ou servidor indisponível";
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
