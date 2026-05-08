@@ -1,0 +1,96 @@
+import { PrismaClient, Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const adminHash = await bcrypt.hash('Admin123!', 10);
+  const medicoHash = await bcrypt.hash('Medico123!', 10);
+  const pacienteHash = await bcrypt.hash('Paciente123!', 10);
+
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@portal.local' },
+    update: {},
+    create: {
+      email: 'admin@portal.local',
+      name: 'Administrador',
+      role: Role.ADMIN,
+      passwordHash: adminHash,
+    },
+  });
+
+  const medico = await prisma.user.upsert({
+    where: { email: 'medico@portal.local' },
+    update: {},
+    create: {
+      email: 'medico@portal.local',
+      name: 'Dra. Helena Vieira',
+      role: Role.MEDICO,
+      passwordHash: medicoHash,
+    },
+  });
+
+  const pacienteUser = await prisma.user.upsert({
+    where: { email: 'paciente@portal.local' },
+    update: {},
+    create: {
+      email: 'paciente@portal.local',
+      name: 'João Silva',
+      role: Role.PACIENTE,
+      passwordHash: pacienteHash,
+    },
+  });
+
+  const patient = await prisma.patient.upsert({
+    where: { medicalRecordNumber: 'PAC0001' },
+    update: {
+      userId: pacienteUser.id,
+      fullName: 'João Silva',
+    },
+    create: {
+      medicalRecordNumber: 'PAC0001',
+      fullName: 'João Silva',
+      userId: pacienteUser.id,
+    },
+  });
+
+  const studyInstanceUID =
+    process.env.SEED_STUDY_INSTANCE_UID || '1.2.3.4.5.6.7.8.9.10.11.12';
+
+  const study = await prisma.study.upsert({
+    where: { studyInstanceUID },
+    update: { patientId: patient.id },
+    create: {
+      patientId: patient.id,
+      studyInstanceUID,
+      studyDescription: 'RM Joelho — exemplo (sincronize com Orthanc)',
+      studyDate: '20240101',
+      accessionNumber: 'ACC-2024-001',
+      modality: 'MR',
+    },
+  });
+
+  await prisma.studyPermission.upsert({
+    where: {
+      userId_studyId: { userId: medico.id, studyId: study.id },
+    },
+    update: {},
+    create: {
+      userId: medico.id,
+      studyId: study.id,
+    },
+  });
+
+  console.log(
+    'Seed concluído. Defina SEED_STUDY_INSTANCE_UID com um UID real do Orthanc.',
+  );
+}
+
+main()
+  .then(() => prisma.$disconnect())
+  .catch(async (e) => {
+    // eslint-disable-next-line no-console
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

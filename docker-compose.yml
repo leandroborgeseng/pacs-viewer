@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: portal
+      POSTGRES_DB: portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  orthanc:
+    image: jodogne/orthanc-plugins:1.12.4
+    restart: unless-stopped
+    ports:
+      - "8042:8042"
+      - "4242:4242"
+    volumes:
+      - orthanc:/var/lib/orthanc/db
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://portal:portal@db:5432/portal
+      JWT_SECRET: dev-change-this-to-a-long-random-string
+      JWT_EXPIRES_SEC: "28800"
+      WEB_ORIGIN: http://localhost:3000
+      ORTHANC_DICOMWEB_ROOT: http://orthanc:8042/dicom-web
+    ports:
+      - "3001:3000"
+    depends_on:
+      - db
+      - orthanc
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api
+        NEXT_PUBLIC_OHIF_BASE_PATH: /ohif
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_OHIF_BASE_PATH: /ohif
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  orthanc:

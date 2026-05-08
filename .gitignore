@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.next/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# Build OHIF copiado localmente (use Docker / CI)
+web/public/ohif/

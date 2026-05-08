@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEDICO
+  PACIENTE
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  patientProfile Patient?         @relation("PatientAccount")
+  permissions    StudyPermission[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model Patient {
+  id                  String    @id @default(uuid())
+  userId              String?   @unique
+  medicalRecordNumber String    @unique
+  fullName            String
+  birthDate           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user    User?   @relation("PatientAccount", fields: [userId], references: [id], onDelete: SetNull)
+  studies Study[]
+
+  @@map("patients")
+}
+
+model Study {
+  id               String   @id @default(uuid())
+  patientId        String
+  studyInstanceUID String   @unique
+  studyDescription String?
+  studyDate        String?
+  accessionNumber  String?
+  modality         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  patient     Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  permissions StudyPermission[]
+
+  @@map("studies")
+}
+
+model StudyPermission {
+  id        String   @id @default(uuid())
+  userId    String
+  studyId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  study Study @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, studyId])
+  @@map("permissions")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  resource  String?
+  ip        String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
