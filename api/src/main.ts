@@ -68,6 +68,21 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3000);
   const host = process.env.HOST ?? '0.0.0.0';
   await app.listen(port, host);
+  const railwayPortHint = [
+    '',
+    '========================================',
+    '  Railway — porta INTERNA a configurar',
+    '========================================',
+    `  process.env.PORT (bruto):  ${process.env.PORT ?? '<vazio — Nest usa 3000>'}`,
+    `  Nest está a ouvir em:      ${host}:${port}`,
+    '',
+    '  No serviço da API → Networking / Target →',
+    `  coloque este número:       ${port}`,
+    '  (Docker EXPOSE só documenta; o proxy liga a esta porta.)',
+    '========================================',
+    '',
+  ].join('\n');
+  console.log(railwayPortHint);
   console.log(`[bootstrap] API a ouvir em http://${host}:${port} (health: /health)`);
 }
 

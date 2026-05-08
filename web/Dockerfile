@@ -52,7 +52,10 @@ COPY --from=build /app/public ./public
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+COPY web/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 USER nextjs
 EXPOSE 3000
-# Sem PORT no ambiente, o server.js do Next usa 3000 (útil em docker compose local).
-CMD ["node", "server.js"]
+# Imprime PORT efetivo nos Deploy Logs (Railway) antes do Next subir.
+CMD ["/docker-entrypoint.sh"]
