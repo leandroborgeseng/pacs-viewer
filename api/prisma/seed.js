@@ -10,7 +10,12 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'admin@portal.local' },
-    update: {},
+    update: {
+      passwordHash: adminHash,
+      active: true,
+      name: 'Administrador',
+      role: Role.ADMIN,
+    },
     create: {
       email: 'admin@portal.local',
       name: 'Administrador',
@@ -21,7 +26,12 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'medico@portal.local' },
-    update: {},
+    update: {
+      passwordHash: medicoHash,
+      active: true,
+      name: 'Dra. Helena Vieira',
+      role: Role.MEDICO,
+    },
     create: {
       email: 'medico@portal.local',
       name: 'Dra. Helena Vieira',
@@ -32,7 +42,12 @@ async function main() {
 
   const pacienteUser = await prisma.user.upsert({
     where: { email: 'paciente@portal.local' },
-    update: {},
+    update: {
+      passwordHash: pacienteHash,
+      active: true,
+      name: 'João Silva',
+      role: Role.PACIENTE,
+    },
     create: {
       email: 'paciente@portal.local',
       name: 'João Silva',
