@@ -1,7 +1,8 @@
-# Build a partir da RAIZ do repositório (Railway, CI):
-#   docker build -f api/Dockerfile .
+# API NestJS — contexto de build = RAIZ do monorepo.
+#   docker build .
 #
-# Railway: adicione DATABASE_URL (referência ao plugin PostgreSQL) + JWT_SECRET nas Variables.
+# O Metal/Railway Railpack ignora Dockerfiles só em subpastas; este ficheiro
+# na raiz permite deteção automática. Serviço Web: use web/Dockerfile no painel.
 
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app

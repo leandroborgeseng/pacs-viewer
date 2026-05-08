@@ -23,7 +23,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: api/Dockerfile
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       PORT: 3000

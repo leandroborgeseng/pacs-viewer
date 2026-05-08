@@ -1,4 +1,4 @@
-# Contexto Docker = raiz do monorepo (api/Dockerfile, web/Dockerfile)
+# Contexto Docker = raiz do monorepo (Dockerfile = API, web/Dockerfile = Web)
 .git
 **/.DS_Store
 

@@ -139,12 +139,13 @@ Exemplo: se a API pública for `https://pacs-viewer-production.up.railway.app` e
 
 Se o healthcheck falhar, abra **Deploy Logs**: mensagens como `Variável obrigatória em falta` ou erros de `prisma migrate` / `P1001` indicam base ou rede.
 
-1. Serviços recomendados: **PostgreSQL**, **API** (`api/Dockerfile`), **Web** (`web/Dockerfile`). Já **não** é necessário um serviço OHIF à parte.  
+1. Serviços recomendados: **PostgreSQL**, **API** (`Dockerfile` na raiz do repo), **Web** (`web/Dockerfile`). Já **não** é necessário um serviço OHIF à parte.  
 2. Na API: `DATABASE_URL`, `JWT_SECRET`, `WEB_ORIGIN` (URL exata do frontend), `ORTHANC_DICOMWEB_ROOT`, e credenciais Orthanc se necessário.  
 3. Na Web — variáveis de **build**: `NEXT_PUBLIC_API_URL` = URL **HTTPS** da API, **com ou sem** sufixo `/api` (o frontend normaliza para `…/api`). Também `NEXT_PUBLIC_OHIF_BASE_PATH=/ohif`. A imagem final usa Next **standalone** (`web/docker-entrypoint.sh` + `node server.js`). **Não** é necessário `DATABASE_URL` no serviço Web.  
 4. **Config as Code por serviço (obrigatório):** O repositório **não** tem `railway.json` na raiz — antes, o Railway aplicava a mesma config a **todos** os serviços e o **Web** compilava a imagem da API (Prisma / P1012). Em cada serviço → **Settings** → **Config-as-code** / **Configuration file** → caminho **desde a raiz do Git** (não segue “Root Directory”, ver [monorepo](https://docs.railway.com/deployments/monorepo)): serviço **API** → **`api/railway.json`**; serviço **Web** → **`web/railway.json`**.  
 5. **Root Directory** de ambos os serviços: vazio (raiz do repositório), para o Docker usar o contexto do monorepo (`COPY api/…`, `COPY web/…`). Só use “Root Directory” = `web` se duplicar a lógica dos Dockerfiles.  
-6. Se ainda aparecer **P1012** no Web, confirma que o ficheiro de config desse serviço é mesmo **`web/railway.json`** (não o da API) e faz **Redeploy**.
+6. Se ainda aparecer **P1012** no Web, confirma que o ficheiro de config desse serviço é mesmo **`web/railway.json`** (não o da API) e faz **Redeploy**.  
+7. Se o build da **API** falhar com **Railpack** (“could not determine how to build”), o projeto passou a ter **`Dockerfile` na raiz** (Nest). No serviço API usa **Docker** / **`Dockerfile`** ou o config `api/railway.json`. O **Web** continua com **`web/Dockerfile`** (não uses só o `./Dockerfile` da raiz no serviço Web).
 
 Em produção use HTTPS; o `app-config.js` incorpora a URL da API definida no momento do build.
 
