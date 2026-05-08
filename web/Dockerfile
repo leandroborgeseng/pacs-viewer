@@ -15,9 +15,10 @@ RUN corepack enable && corepack prepare yarn@1.22.22 --activate
 ENV NODE_OPTIONS=--max_old_space_size=6144
 ENV QUICK_BUILD=true
 ENV PUBLIC_URL=/ohif/
-ENV NODE_ENV=production
+# Não definir NODE_ENV=production antes do yarn install: o Yarn omitiria
+# devDependencies e o build do OHIF falha com "lerna: not found".
 RUN yarn install --network-timeout 300000 \
-  && yarn run build
+  && NODE_ENV=production yarn run build
 
 # --- Next.js deps ---
 FROM node:22-bookworm-slim AS deps
