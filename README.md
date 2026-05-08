@@ -136,10 +136,10 @@ Se o healthcheck falhar, abra **Deploy Logs**: mensagens como `Variável obrigat
 
 1. Serviços recomendados: **PostgreSQL**, **API** (`api/Dockerfile`), **Web** (`web/Dockerfile`). Já **não** é necessário um serviço OHIF à parte.  
 2. Na API: `DATABASE_URL`, `JWT_SECRET`, `WEB_ORIGIN` (URL exata do frontend), `ORTHANC_DICOMWEB_ROOT`, e credenciais Orthanc se necessário.  
-3. Na Web — variáveis de **build**: `NEXT_PUBLIC_API_URL` (URL HTTPS da API + `/api`), `NEXT_PUBLIC_OHIF_BASE_PATH=/ohif`. A imagem final usa Next **standalone**; o arranque é `node server.js` (ver `web/railway.json` — não use `npm run start` no deploy). **Não** é necessário `DATABASE_URL` no serviço Web (o browser fala só com a API).  
-4. Se o deploy **Web** falhar com **P1012** / “Environment variable not found: DATABASE_URL” durante o build Prisma, o Railway está a usar o **Dockerfile da API**, não o do frontend. No serviço **pacs-viewer-web** → Settings → Build: **Dockerfile Path** = **`web/Dockerfile`** (raiz do repo vazia), ou aponte o ficheiro de config para **`web/railway.json`**, nunca só o `railway.json` da raiz (esse é da API).
-5. O **contexto de build** é sempre a **raiz do Git**; os Dockerfiles usam os prefixos `api/` e `web/`. Não defina “Root Directory” só para `api` a menos que duplique esta lógica.  
-6. `railway.json` na raiz é orientado **só à API**; o ficheiro `web/railway.json` assume **raiz do Git** como contexto de build e `dockerfilePath: web/Dockerfile`. Se no serviço Web definires **Root Directory** = `web`, altera o path do Dockerfile para `Dockerfile`.
+3. Na Web — variáveis de **build**: `NEXT_PUBLIC_API_URL` (URL HTTPS da API + `/api`), `NEXT_PUBLIC_OHIF_BASE_PATH=/ohif`. A imagem final usa Next **standalone**; o arranque é via `web/docker-entrypoint.sh` + `node server.js`. **Não** é necessário `DATABASE_URL` no serviço Web.  
+4. **Config as Code por serviço (obrigatório):** O repositório **não** tem `railway.json` na raiz — antes, o Railway aplicava a mesma config a **todos** os serviços e o **Web** compilava a imagem da API (Prisma / P1012). Em cada serviço → **Settings** → **Config-as-code** / **Configuration file** → caminho **desde a raiz do Git** (não segue “Root Directory”, ver [monorepo](https://docs.railway.com/deployments/monorepo)): serviço **API** → **`api/railway.json`**; serviço **Web** → **`web/railway.json`**.  
+5. **Root Directory** de ambos os serviços: vazio (raiz do repositório), para o Docker usar o contexto do monorepo (`COPY api/…`, `COPY web/…`). Só use “Root Directory” = `web` se duplicar a lógica dos Dockerfiles.  
+6. Se ainda aparecer **P1012** no Web, confirma que o ficheiro de config desse serviço é mesmo **`web/railway.json`** (não o da API) e faz **Redeploy**.
 
 Em produção use HTTPS; o `app-config.js` incorpora a URL da API definida no momento do build.
 
