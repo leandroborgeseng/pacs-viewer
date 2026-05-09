@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExternalLink, Search } from "lucide-react";
-import { apiFetch, type StudyRow } from "@/lib/api";
+import { apiFetch, formatApiError, type StudyRow } from "@/lib/api";
 import { openOhifStudyWindow } from "@/lib/ohif-window";
 import { useAuth } from "@/context/auth-context";
 import {
@@ -20,21 +20,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 
 export default function ExamesPage() {
-  const { token, user } = useAuth();
+  const { token, user, loading } = useAuth();
   const [rows, setRows] = useState<StudyRow[] | null>(null);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    if (loading) return;
+    if (!token) {
+      setRows([]);
+      return;
+    }
+
     void (async () => {
       try {
-        const data = await apiFetch<StudyRow[]>("/studies/me");
+        const data = await apiFetch<StudyRow[]>("/studies/me", {}, token);
         setRows(data);
-      } catch {
-        toast.error("Não foi possível carregar exames");
+      } catch (err) {
+        toast.error(
+          formatApiError(err, "Não foi possível carregar exames"),
+        );
         setRows([]);
       }
     })();
-  }, []);
+  }, [loading, token]);
 
   const filtered =
     rows?.filter((s) => {

@@ -116,6 +116,19 @@ async function bootstrap() {
   );
   const port = Number(process.env.PORT ?? 3000);
   const host = process.env.HOST ?? '0.0.0.0';
+  const orthancRoot =
+    process.env.ORTHANC_DICOMWEB_ROOT?.trim() ||
+    '(não definido — QIDO usará http://localhost:8042/dicom-web)';
+  console.log(`[bootstrap] ORTHANC_DICOMWEB_ROOT effective check: ${orthancRoot}`);
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!process.env.ORTHANC_DICOMWEB_ROOT?.trim() ||
+      /localhost|127\.0\.0\.1/i.test(process.env.ORTHANC_DICOMWEB_ROOT))
+  ) {
+    console.warn(
+      '[bootstrap] Aviso: em produção ORTHANC_DICOMWEB_ROOT está vazio ou aponta para localhost — o contentor da API não alcança o Orthanc do teu PC. Defina o URL público/privado do PACS nas variáveis do serviço API.',
+    );
+  }
   await app.listen(port, host);
   const railwayPortHint = [
     '',
