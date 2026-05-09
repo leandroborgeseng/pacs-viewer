@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Montserrat, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
+const montserrat = Montserrat({
   variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -16,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aion Imaging — Portal clínico",
+  title: "BlueBeaver — Portal clínico",
   description:
-    "Plataforma enterprise de imagiologia: portal seguro, visualizador DICOM e proxy DICOMweb.",
+    "Plataforma BlueBeaver de imagiologia: portal seguro, visualizador DICOM e proxy DICOMweb.",
 };
 
 export default function RootLayout({
@@ -28,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${montserrat.variable} ${geistMono.variable} font-sans antialiased`}>
         <ThemeProvider>
           <AuthProvider>
             {children}

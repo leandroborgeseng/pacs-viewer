@@ -1,6 +1,6 @@
 import type { ApiUser } from "./api";
 
-const WINDOW_NAME = "AionDicomViewer";
+const WINDOW_NAME = "BlueBeaverViewer";
 
 export function getOhifBasePath(): string {
   return (process.env.NEXT_PUBLIC_OHIF_BASE_PATH ?? "/ohif").replace(/\/$/, "") || "/ohif";
@@ -22,13 +22,13 @@ export function buildOhifViewerAbsoluteUrl(
   return `${window.location.origin}${base}/viewer?${q.toString()}${hash}`;
 }
 
-/** Envia dados de sessão para a janela do viewer (bridge Aion no OHIF). */
+/** Envia dados de sessão para a janela do viewer (bridge BlueBeaver no OHIF). */
 export function pushSessionToOhifWindow(win: Window, user: ApiUser | null): void {
   if (!user || typeof window === "undefined") return;
   try {
     win.postMessage(
       {
-        source: "aion-parent",
+        source: "bb-portal",
         type: "SESSION",
         user: { name: user.name, email: user.email, role: user.role },
       },

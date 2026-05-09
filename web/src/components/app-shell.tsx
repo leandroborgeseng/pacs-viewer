@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Moon, Sun, LogOut, LayoutDashboard, Images, Shield } from "lucide-react";
@@ -16,8 +17,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/auth-context";
-import { AionLogoMark } from "@/components/aion/aion-logo-mark";
-import { ConnectionPill } from "@/components/aion/connection-pill";
+import { BlueBeaverLogo } from "@/components/branding/bluebeaver-logo";
+import { ConnectionPill } from "@/components/branding/connection-pill";
+import { KeyboardShortcutsSheet } from "@/components/branding/keyboard-shortcuts-sheet";
 
 const nav = [
   { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
@@ -30,17 +32,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
+  useEffect(() => {
+    if (!user?.role) {
+      document.documentElement.removeAttribute("data-bb-role");
+      return;
+    }
+    document.documentElement.setAttribute("data-bb-role", user.role);
+    return () => document.documentElement.removeAttribute("data-bb-role");
+  }, [user?.role]);
+
   return (
-    <div className="min-h-screen bg-background bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(0,102,178,0.12),transparent)]">
+    <div
+      className={cn(
+        "bb-app-root min-h-screen bg-background",
+        "bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(0,102,178,0.12),transparent),radial-gradient(ellipse_100%_50%_at_100%_0%,rgba(46,177,0,0.07),transparent)]",
+        user?.role === "PACIENTE" &&
+          "bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(0,102,178,0.1),transparent),radial-gradient(ellipse_90%_55%_at_0%_0%,rgba(46,177,0,0.11),transparent)]",
+      )}
+    >
       <header className="sticky top-0 z-40 border-b border-border/80 bg-background/75 backdrop-blur-xl">
         <div className="mx-auto flex h-[52px] max-w-[1600px] items-center justify-between gap-4 px-4 md:px-6">
-          <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
-            <AionLogoMark size="sm" />
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-semibold tracking-tight">Aion Imaging</p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                Plataforma clínica de imagem
-              </p>
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
+            <BlueBeaverLogo size="sm" className="max-h-9" />
+            <div className="min-w-0 leading-tight hidden sm:block">
+              <p className="truncate text-sm font-semibold tracking-tight">BlueBeaver</p>
+              <p className="truncate text-[11px] text-muted-foreground">Imagiologia clínica</p>
             </div>
           </Link>
           <nav className="hidden flex-1 items-center justify-center gap-1 md:flex">
@@ -79,8 +95,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <ConnectionPill className="hidden sm:inline-flex" />
+            <KeyboardShortcutsSheet />
             <Button
               variant="ghost"
               size="icon"

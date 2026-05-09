@@ -1,36 +1,30 @@
 /**
- * Tokens de design Aion Imaging — portal + overrides OHIF (referência TS).
- * Cores alinhadas com globals.css (.dark / marca).
+ * Tokens BlueBeaver — portal + OHIF (referência TS).
  */
-export const aion = {
+export const bluebeaver = {
   brand: {
-    name: "Aion Imaging",
+    name: "BlueBeaver",
     tagline: "Enterprise imaging",
   },
   colors: {
-    primary: "#0066B2",
-    primaryHover: "#0078CC",
-    primaryMuted: "rgba(0, 102, 178, 0.15)",
-    accent: "#FF4F00",
-    accentMuted: "rgba(255, 79, 0, 0.12)",
+    blue: "#0066B2",
+    blueHover: "#0A7FD4",
+    green: "#2EB100",
+    greenBright: "#7AE632",
     background: "#0B1120",
+    backgroundDeep: "#050914",
     surface: "#111827",
-    surfaceElevated: "rgba(17, 24, 39, 0.72)",
     border: "#1F2937",
     text: "#E5E7EB",
     textMuted: "#9CA3AF",
-    success: "#10B981",
-    warning: "#F59E0B",
-    danger: "#EF4444",
   },
   radii: {
     sm: "0.375rem",
     md: "0.5rem",
     lg: "0.75rem",
     xl: "1rem",
-    full: "9999px",
   },
   font: {
-    sans: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
+    sans: 'var(--font-sans), Montserrat, ui-sans-serif, system-ui, sans-serif',
   },
 } as const;

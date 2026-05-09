@@ -1,6 +1,5 @@
 /**
- * Ponte Aion: recebe dados de sessão do portal (postMessage) e oferece logout
- * que delega ao parent. Mesma origem apenas.
+ * BlueBeaver — ponte com o portal (postMessage, mesma origem).
  */
 (function () {
   "use strict";
@@ -22,12 +21,12 @@
   }
 
   function render() {
-    var el = document.getElementById("aion-iframe-chrome");
+    var el = document.getElementById("bb-viewer-chrome");
     if (!el) {
       el = document.createElement("div");
-      el.id = "aion-iframe-chrome";
+      el.id = "bb-viewer-chrome";
       el.setAttribute("role", "complementary");
-      el.setAttribute("aria-label", "Aion Imaging — sessão");
+      el.setAttribute("aria-label", "BlueBeaver — sessão");
       document.body.appendChild(el);
     }
     if (!state.user) {
@@ -40,34 +39,34 @@
     var e = state.user.email || "";
     var r = state.user.role || "";
     el.innerHTML =
-      '<div class="aion-chrome-inner">' +
-      '<div class="aion-chrome-avatar" title="' +
+      '<div class="bb-chrome-inner">' +
+      '<div class="bb-chrome-avatar" title="' +
       esc(e) +
       '">' +
       esc(initials(n)) +
       "</div>" +
-      '<div class="aion-chrome-meta">' +
-      '<span class="aion-chrome-name">' +
+      '<div class="bb-chrome-meta">' +
+      '<span class="bb-chrome-name">' +
       esc(n) +
       "</span>" +
-      '<span class="aion-chrome-role">' +
+      '<span class="bb-chrome-role">' +
       esc(r) +
       "</span>" +
       "</div>" +
-      '<button type="button" class="aion-chrome-logout" data-aion-logout>Sair</button>' +
+      '<button type="button" class="bb-chrome-logout" data-bb-logout>Sair</button>' +
       "</div>";
-    var btn = el.querySelector("[data-aion-logout]");
+    var btn = el.querySelector("[data-bb-logout]");
     if (btn) {
       btn.addEventListener("click", function () {
         try {
           if (window.opener && !window.opener.closed) {
             window.opener.postMessage(
-              { source: "aion-iframe", type: "AION_LOGOUT", ts: Date.now() },
+              { source: "bb-viewer", type: "BB_LOGOUT", ts: Date.now() },
               window.location.origin,
             );
           } else if (window.parent && window.parent !== window) {
             window.parent.postMessage(
-              { source: "aion-iframe", type: "AION_LOGOUT", ts: Date.now() },
+              { source: "bb-viewer", type: "BB_LOGOUT", ts: Date.now() },
               window.location.origin,
             );
           }
@@ -89,7 +88,7 @@
       if (ev.origin !== window.location.origin) return;
       var d = ev.data;
       if (!d || typeof d !== "object") return;
-      if (d.source !== "aion-parent") return;
+      if (d.source !== "bb-portal") return;
       if (d.type === "SESSION") {
         state.user = d.user || null;
         render();

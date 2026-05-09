@@ -52,12 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [refreshMe]);
 
-  /** Logout pedido a partir da janela do viewer (postMessage do bridge Aion). */
+  /** Logout pedido a partir da janela do viewer (postMessage do bridge BlueBeaver). */
   useEffect(() => {
     function onMessage(ev: MessageEvent) {
       if (typeof window === "undefined" || ev.origin !== window.location.origin) return;
       const d = ev.data as { source?: string; type?: string } | null;
-      if (!d || d.source !== "aion-iframe" || d.type !== "AION_LOGOUT") return;
+      if (!d || d.source !== "bb-viewer" || d.type !== "BB_LOGOUT") return;
       setStoredToken(null);
       setToken(null);
       setUser(null);

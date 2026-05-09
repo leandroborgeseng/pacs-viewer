@@ -20,7 +20,7 @@ export default function DashboardPage() {
           {user?.name}
         </h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Consola clínica para imagiologia: catálogo de estudos, leitura no visualizador Aion e
+          Consola clínica BlueBeaver: catálogo de estudos, leitura no visualizador DICOM e
           tráfego DICOMweb sempre mediado pelo seu backend.
         </p>
       </div>

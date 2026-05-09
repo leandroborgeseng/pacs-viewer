@@ -46,8 +46,7 @@ window.config = {
             flexDirection: 'column',
             justifyContent: 'center',
             marginLeft: '10px',
-            fontFamily:
-              'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+            fontFamily: 'Montserrat, ui-sans-serif, system-ui, sans-serif',
           },
         },
         React.createElement(
@@ -61,14 +60,14 @@ window.config = {
               lineHeight: 1.15,
             },
           },
-          'Aion Imaging'
+          'BlueBeaver'
         ),
         React.createElement(
           'span',
           {
             style: {
               fontSize: '10px',
-              color: '#94A3B8',
+              color: '#7ae632',
               fontWeight: 500,
               textTransform: 'uppercase',
               letterSpacing: '0.12em',
@@ -81,7 +80,7 @@ window.config = {
   },
   httpErrorHandler: function (error) {
     if (error && error.status) {
-      console.warn('[Aion Imaging] DICOMweb', error.status);
+      console.warn('[BlueBeaver] DICOMweb', error.status);
     }
   },
   defaultDataSourceName: 'dicomweb',
@@ -90,8 +89,8 @@ window.config = {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'dicomweb',
       configuration: {
-        friendlyName: 'Aion Imaging — PACS',
-        name: 'aion',
+        friendlyName: 'BlueBeaver — PACS',
+        name: 'bluebeaver',
         wadoUriRoot: ${json(dicomRoot)},
         qidoRoot: ${json(dicomRoot)},
         wadoRoot: ${json(dicomRoot)},

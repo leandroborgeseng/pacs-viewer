@@ -10,11 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
-import { AionLogoMark } from "@/components/aion/aion-logo-mark";
+import { BlueBeaverLogo } from "@/components/branding/bluebeaver-logo";
 import { cn } from "@/lib/utils";
 
-const REMEMBER_EMAIL_KEY = "aion.imaging.rememberEmail";
-const REMEMBER_FLAG_KEY = "aion.imaging.rememberUser";
+const REMEMBER_EMAIL_KEY = "bluebeaver.portal.rememberEmail";
+const REMEMBER_FLAG_KEY = "bluebeaver.portal.rememberUser";
 
 export default function LoginPage() {
   const { login, user, loading } = useAuth();
@@ -74,7 +74,7 @@ export default function LoginPage() {
         className="pointer-events-none absolute inset-0 opacity-[0.45]"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 20% -10%, rgba(0,102,178,0.55), transparent 55%), radial-gradient(ellipse 70% 50% at 90% 20%, rgba(255,79,0,0.2), transparent 50%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(0,102,178,0.25), transparent 55%)",
+            "radial-gradient(ellipse 80% 60% at 18% -8%, rgba(0,102,178,0.5), transparent 52%), radial-gradient(ellipse 70% 50% at 92% 18%, rgba(46,177,0,0.22), transparent 48%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(0,102,178,0.2), transparent 55%)",
         }}
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(11,17,32,0.2),#0B1120_65%)]" />
@@ -85,12 +85,12 @@ export default function LoginPage() {
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="mb-10 text-center"
         >
-          <div className="mx-auto mb-5 flex justify-center">
-            <AionLogoMark size="lg" className="shadow-[0_20px_50px_-12px_rgba(0,102,178,0.55)]" />
+          <div className="mx-auto mb-6 flex justify-center drop-shadow-[0_16px_40px_rgba(46,177,0,0.15)]">
+            <BlueBeaverLogo size="lg" priority className="mx-auto" />
           </div>
-          <h1 className="text-[1.75rem] font-semibold tracking-tight text-white">Aion Imaging</h1>
+          <h1 className="text-[1.75rem] font-semibold tracking-tight text-white">BlueBeaver</h1>
           <p className="mt-2 text-sm leading-relaxed text-[#9CA3AF]">
-            Portal enterprise de imagiologia. Acesso seguro e auditoria centralizada.
+            Portal clínico de imagiologia. Acesso seguro e tráfego DICOM mediado pelo seu backend.
           </p>
         </motion.div>
 
@@ -126,7 +126,7 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-11 border-[#1F2937] bg-[#0B1120]/90 pl-10 text-[#E5E7EB] placeholder:text-[#6B7280] focus-visible:border-[#0066B2] focus-visible:ring-[#0066B2]/30"
+                      className="h-11 border-[#1F2937] bg-[#0B1120]/90 pl-10 text-[#E5E7EB] placeholder:text-[#6B7280] focus-visible:border-[#0066B2] focus-visible:ring-[#2EB100]/25"
                       placeholder="nome@instituicao.pt"
                     />
                   </div>
@@ -144,7 +144,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="h-11 border-[#1F2937] bg-[#0B1120]/90 pl-10 text-[#E5E7EB] placeholder:text-[#6B7280] focus-visible:border-[#0066B2] focus-visible:ring-[#0066B2]/30"
+                      className="h-11 border-[#1F2937] bg-[#0B1120]/90 pl-10 text-[#E5E7EB] placeholder:text-[#6B7280] focus-visible:border-[#0066B2] focus-visible:ring-[#2EB100]/25"
                       placeholder="••••••••"
                     />
                   </div>
@@ -154,14 +154,14 @@ export default function LoginPage() {
                     type="checkbox"
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
-                    className="size-4 rounded border-[#1F2937] bg-[#0B1120] text-[#0066B2] focus:ring-[#0066B2]/40"
+                    className="size-4 rounded border-[#1F2937] bg-[#0B1120] text-[#2EB100] focus:ring-[#2EB100]/35"
                   />
                   Lembrar utilizador neste dispositivo
                 </label>
                 <Button
                   type="submit"
                   disabled={busy}
-                  className="flex h-11 w-full items-center justify-center bg-[#0066B2] text-white shadow-lg shadow-[#0066B2]/25 transition hover:bg-[#0078CC]"
+                  className="flex h-11 w-full items-center justify-center bg-[#0066B2] text-white shadow-lg shadow-[#0066B2]/30 ring-1 ring-[#2EB100]/20 transition hover:bg-[#0078CC]"
                 >
                   {busy ? (
                     <>

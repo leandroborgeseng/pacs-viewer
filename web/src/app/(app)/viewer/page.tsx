@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
-import { ConnectionPill } from "@/components/aion/connection-pill";
+import { ConnectionPill } from "@/components/branding/connection-pill";
 import { openOhifStudyWindow, buildOhifViewerAbsoluteUrl } from "@/lib/ohif-window";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

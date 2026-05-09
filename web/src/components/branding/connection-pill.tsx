@@ -6,6 +6,7 @@ import { useOnlineStatus } from "@/hooks/use-online-status";
 
 type Props = { className?: string };
 
+/** Indicador de rede — verde BlueBeaver (#2EB100) quando online */
 export function ConnectionPill({ className }: Props) {
   const online = useOnlineStatus();
 
@@ -14,7 +15,7 @@ export function ConnectionPill({ className }: Props) {
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
         online
-          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          ? "border-[#2EB100]/40 bg-[#2EB100]/12 text-[#7ae632]"
           : "border-amber-500/30 bg-amber-500/10 text-amber-300",
         className,
       )}
