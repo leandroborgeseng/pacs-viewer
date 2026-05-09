@@ -31,6 +31,16 @@ export class DicomWebService {
     return base.replace(/\/$/, '');
   }
 
+  /**
+   * URL pública do DICOMweb vista pelo browser (proxy Next no portal).
+   * Sem isto, metadados Orthanc trazem http(s)://orthanc/... e o OHIF falha (CORS/CSP).
+   */
+  private browserPublicDicomwebRoot(): string | null {
+    const web = this.config.get<string>('WEB_ORIGIN')?.trim().replace(/\/+$/, '');
+    if (!web) return null;
+    return `${web}/bb-api/dicomweb`;
+  }
+
   async proxy(req: Request, res: Response, user: RequestUser) {
     const upstreamUrl = this.buildUpstreamUrl(req);
     const studyFromPath = this.extractStudyUidFromPath(upstreamUrl.pathname);
@@ -96,16 +106,31 @@ export class DicomWebService {
 
       if (isJsonStudies && user.role !== Role.ADMIN) {
         const filtered = this.filterStudiesResponse(
-          Buffer.from(response.data),
+          Buffer.from(response.data as ArrayBuffer),
           allowed,
         );
-        this.forwardHeaders(res, response.headers, filtered.length);
-        res.status(response.status).send(filtered);
+        const out = this.rewriteDicomJsonBodyIfNeeded(
+          filtered,
+          contentType,
+        );
+        this.forwardHeaders(
+          res,
+          this.rewriteOutgoingHeaders(response.headers),
+          out.length,
+        );
+        res.status(response.status).send(out);
         return;
       }
 
-      const body = Buffer.from(response.data);
-      this.forwardHeaders(res, response.headers, body.length);
+      const body = this.rewriteDicomJsonBodyIfNeeded(
+        Buffer.from(response.data as ArrayBuffer),
+        contentType,
+      );
+      this.forwardHeaders(
+        res,
+        this.rewriteOutgoingHeaders(response.headers),
+        body.length,
+      );
       res.status(response.status).send(body);
     } catch (err) {
       this.logJson({
@@ -241,7 +266,7 @@ export class DicomWebService {
     const query = q ? `?${q}` : '';
 
     let relative = rawPath;
-    for (const p of ['/api/dicomweb', '/dicomweb']) {
+    for (const p of ['/api/dicomweb', '/dicomweb', '/bb-api/dicomweb']) {
       if (relative.startsWith(p)) {
         relative = relative.slice(p.length) || '/';
         break;
@@ -249,5 +274,67 @@ export class DicomWebService {
     }
     if (!relative.startsWith('/')) relative = `/${relative}`;
     return new URL(`${base}${relative}${query}`);
+  }
+
+  /** Reescreve URLs Orthanc em JSON; noop se WEB_ORIGIN ausente. */
+  private rewriteDicomJsonBodyIfNeeded(body: Buffer, contentType: string): Buffer {
+    const publicRoot = this.browserPublicDicomwebRoot();
+    if (!publicRoot) return body;
+    const ct = contentType.toLowerCase();
+    if (!ct.includes('json')) return body;
+    try {
+      const text = body.toString('utf8');
+      const parsed = JSON.parse(text) as unknown;
+      const out = this.rewriteDicomJsonUrlsDeep(parsed, publicRoot);
+      return Buffer.from(JSON.stringify(out), 'utf8');
+    } catch {
+      return body;
+    }
+  }
+
+  /** Corrige Location com destino Orthanc. */
+  private rewriteOutgoingHeaders(
+    incoming: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const publicRoot = this.browserPublicDicomwebRoot();
+    if (!publicRoot) return incoming;
+    const loc = incoming['location'];
+    const s = Array.isArray(loc) ? loc[0] : loc;
+    if (typeof s !== 'string') return incoming;
+    const n = this.rewriteUrlString(s, publicRoot);
+    if (n === s) return incoming;
+    return { ...incoming, location: n };
+  }
+
+  private rewriteDicomJsonUrlsDeep(data: unknown, publicBase: string): unknown {
+    if (typeof data === 'string') return this.rewriteUrlString(data, publicBase);
+    if (Array.isArray(data))
+      return data.map((x) => this.rewriteDicomJsonUrlsDeep(x, publicBase));
+    if (data && typeof data === 'object')
+      return Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [
+          k,
+          this.rewriteDicomJsonUrlsDeep(v, publicBase),
+        ]),
+      );
+    return data;
+  }
+
+  /**
+   * Substitui qualquer URL cujo path contenha `/dicom-web` pelo proxy do portal.
+   */
+  private rewriteUrlString(s: string, publicBase: string): string {
+    if (!s.startsWith('http://') && !s.startsWith('https://')) return s;
+    try {
+      const u = new URL(s);
+      const lower = u.pathname.toLowerCase();
+      const marker = '/dicom-web';
+      const idx = lower.indexOf(marker);
+      if (idx === -1) return s;
+      const rest = u.pathname.slice(idx + marker.length) + u.search;
+      return `${publicBase}${rest}`;
+    } catch {
+      return s;
+    }
   }
 }

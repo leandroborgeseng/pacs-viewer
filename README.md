@@ -130,6 +130,8 @@ Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o brow
 
 **Lista em Exames (`GET /api/studies/me`):** os metadados vêm do **PACS** (QIDO `GET …/dicom-web/studies`). **ADMIN** vê todos os estudos devolvidos pelo Orthanc. **MEDICO** e **PACIENTE** só vêem estudos cujo `StudyInstanceUID` está autorizado na base (permissões / paciente); é necessário existir registo `Study` com o mesmo UID no portal para amarrar permissões (o catálogo continua a ser filtrado a partir dos dados do PACS).
 
+**URLs nos metadados (WADO / thumbnails):** o Orthanc devolve frequentemente links absolutos (`http://pacs:8042/dicom-web/…`). O proxy da API reescreve-os para `{WEB_ORIGIN}/bb-api/dicomweb/…` em respostas JSON, para o browser usar o mesmo proxy que o QIDO — **defina `WEB_ORIGIN` com o URL público exato do portal** (ex. `https://teu-web.up.railway.app`, sem barra no fim).
+
 ## Railway
 
 **Ligar PostgreSQL no Railway**
