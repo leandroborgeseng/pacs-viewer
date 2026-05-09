@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { ExternalLink, Search } from "lucide-react";
 import { apiFetch, type StudyRow } from "@/lib/api";
 import {
   Table,
@@ -16,9 +17,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export default function ExamesPage() {
   const [rows, setRows] = useState<StudyRow[] | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -32,73 +35,119 @@ export default function ExamesPage() {
     })();
   }, []);
 
+  const filtered =
+    rows?.filter((s) => {
+      if (!query.trim()) return true;
+      const q = query.trim().toLowerCase();
+      return (
+        s.patient.fullName.toLowerCase().includes(q) ||
+        s.patient.medicalRecordNumber.toLowerCase().includes(q) ||
+        (s.studyDescription ?? "").toLowerCase().includes(q) ||
+        s.studyInstanceUID.toLowerCase().includes(q) ||
+        (s.modality ?? "").toLowerCase().includes(q)
+      );
+    }) ?? null;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Exames</h1>
         <p className="text-muted-foreground">
-          Cada linha corresponde a um estudo registado no portal (UID sincronizado com o PACS).
+          Catálogo sincronizado com o PACS institucional · leitura segura no visualizador clínico.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Lista</CardTitle>
-          <CardDescription>
-            A visualização utiliza o OHIF Viewer v3 via URL assinada com JWT (query
-            parameter suportada pelo proxy).
-          </CardDescription>
+
+      <Card className="border-border/80 bg-card/50 shadow-lg shadow-black/5 backdrop-blur-sm">
+        <CardHeader className="flex flex-col gap-4 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle className="text-base">Lista de estudos</CardTitle>
+            <CardDescription>
+              Pesquisa em tempo real no catálogo · abertura com JWT e proxy DICOMweb.
+            </CardDescription>
+          </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Paciente, NIU, UID, modalidade…"
+              className="h-10 border-border/80 bg-background/80 pl-9"
+              aria-label="Pesquisar estudos"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {!rows ? (
             <p className="text-sm text-muted-foreground">A carregar…</p>
-          ) : rows.length === 0 ? (
+          ) : filtered!.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Sem estudos visíveis para este utilizador.
+              {rows.length === 0
+                ? "Sem estudos visíveis para este utilizador."
+                : "Nenhum resultado para esta pesquisa."}
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>UID</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell>
-                      <div className="font-medium">{s.patient.fullName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {s.patient.medicalRecordNumber}
-                      </div>
-                    </TableCell>
-                    <TableCell>{s.studyDescription ?? "—"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span>{s.studyDate ?? "—"}</span>
-                        {s.modality && <Badge variant="outline">{s.modality}</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-xs text-muted-foreground">
-                      {s.studyInstanceUID}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link
-                        href={`/viewer?studyUID=${encodeURIComponent(s.studyInstanceUID)}`}
-                        className={cn(
-                          buttonVariants({ variant: "default", size: "sm" }),
-                        )}
-                      >
-                        Abrir OHIF
-                      </Link>
-                    </TableCell>
+            <div className="rounded-xl border border-border/60 bg-background/30 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/60 hover:bg-transparent">
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="font-mono text-xs">UID</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered!.map((s) => (
+                    <TableRow
+                      key={s.id}
+                      className="group border-border/40 transition-colors hover:bg-primary/[0.06]"
+                    >
+                      <TableCell>
+                        <div className="font-medium">{s.patient.fullName}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {s.patient.medicalRecordNumber}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[220px] whitespace-normal">
+                        <span className="line-clamp-2">{s.studyDescription ?? "—"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="tabular-nums">{s.studyDate ?? "—"}</span>
+                          {s.modality && (
+                            <Badge variant="secondary" className="font-mono text-[10px]">
+                              {s.modality}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="border-0 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/20">
+                          Disponível
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate font-mono text-[10px] text-muted-foreground md:max-w-[260px] md:text-xs">
+                        {s.studyInstanceUID}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          href={`/viewer?studyUID=${encodeURIComponent(s.studyInstanceUID)}`}
+                          className={cn(
+                            buttonVariants({ variant: "default", size: "sm" }),
+                            "gap-1.5 bg-primary shadow-md shadow-primary/20 transition group-hover:brightness-110",
+                          )}
+                        >
+                          Abrir estudo
+                          <ExternalLink className="size-3.5 opacity-80" aria-hidden />
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

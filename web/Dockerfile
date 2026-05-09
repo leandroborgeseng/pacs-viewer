@@ -36,6 +36,7 @@ ARG NEXT_PUBLIC_OHIF_BASE_PATH=/ohif
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_OHIF_BASE_PATH=${NEXT_PUBLIC_OHIF_BASE_PATH}
 RUN node scripts/write-ohif-app-config.mjs \
+  && node scripts/inject-ohif-assets.mjs \
   && npm run build
 
 # --- Next.js standalone ---

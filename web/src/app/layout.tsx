@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MedView — Portal médico",
-  description: "Portal seguro para exames DICOM com OHIF Viewer v3",
+  title: "Aion Imaging — Portal clínico",
+  description:
+    "Plataforma enterprise de imagiologia: portal seguro, visualizador DICOM e proxy DICOMweb.",
 };
 
 export default function RootLayout({

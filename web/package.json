@@ -7,12 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ohif:config": "node scripts/write-ohif-app-config.mjs"
+    "ohif:config": "node scripts/write-ohif-app-config.mjs",
+    "ohif:inject": "node scripts/inject-ohif-assets.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^11.18.2",
     "lucide-react": "^1.14.0",
     "next": "15.5.18",
     "next-themes": "^0.4.6",

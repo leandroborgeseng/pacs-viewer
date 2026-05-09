@@ -19,51 +19,52 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-semibold tracking-tight">
           {user?.name}
         </h1>
-        <p className="mt-2 text-muted-foreground max-w-2xl">
-          Este painel liga o portal às imagens armazenadas no Orthanc através de um
-          proxy DICOMweb autenticado. O seu perfil determina quais estados e ferramentas
-          estarão disponíveis no OHIF.
+        <p className="mt-2 max-w-2xl text-muted-foreground">
+          Consola clínica para imagiologia: catálogo de estudos, leitura no visualizador Aion e
+          tráfego DICOMweb sempre mediado pelo seu backend.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="border-border/80 bg-card/40 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-base">Perfil ativo</CardTitle>
-            <CardDescription>Controlo RBAC no backend NestJS</CardDescription>
+            <CardDescription>Controlo de acesso no servidor de aplicação</CardDescription>
           </CardHeader>
           <CardContent>
             <Badge variant="secondary">{user?.role}</Badge>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/80 bg-card/40 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-base">Exames</CardTitle>
             <CardDescription>
               {user?.role === "PACIENTE"
                 ? "Apenas os seus estudos registados no portal"
-                : "Estudos autorizados ou todos (admin)"}
+                : "Estudos autorizados ou catálogo completo (admin)"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link
               href="/exames"
-              className={cn(buttonVariants({ variant: "default" }))}
+              className={cn(
+                buttonVariants({ variant: "default", className: "shadow-md shadow-primary/20" }),
+              )}
             >
               Abrir lista
             </Link>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/80 bg-card/40 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-base">Auditoria</CardTitle>
             <CardDescription>
-              Operações sensíveis geram registos básicos no PostgreSQL
+              Registos de operações sensíveis na base de dados institucional
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Administração pode expandir relatórios conforme política interna.
+              A política de retenção e relatórios pode ser alinhada com o DPO / qualidade.
             </p>
           </CardContent>
         </Card>

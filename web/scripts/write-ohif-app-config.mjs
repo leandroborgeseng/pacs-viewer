@@ -26,17 +26,72 @@ window.config = {
   routerBasename: '/ohif',
   extensions: [],
   modes: [],
+  customizationService: {},
   showStudyList: true,
   maxNumberOfWebWorkers: 3,
-  showWarningMessageForCrossOrigin: true,
+  groupEnabledModesFirst: true,
+  showLoadingIndicator: true,
+  showCPUFallbackMessage: true,
+  strictZSpacingForVolumeViewport: true,
+  showWarningMessageForCrossOrigin: false,
+  investigationalUseDialog: { option: 'never' },
+  showPatientInfo: 'visibleCollapsed',
+  whiteLabeling: {
+    createLogoComponentFn: function (React) {
+      return React.createElement(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            marginLeft: '10px',
+            fontFamily:
+              'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+          },
+        },
+        React.createElement(
+          'span',
+          {
+            style: {
+              fontWeight: 700,
+              fontSize: '15px',
+              color: '#E5E7EB',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.15,
+            },
+          },
+          'Aion Imaging'
+        ),
+        React.createElement(
+          'span',
+          {
+            style: {
+              fontSize: '10px',
+              color: '#94A3B8',
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+            },
+          },
+          'Enterprise Viewer'
+        )
+      );
+    },
+  },
+  httpErrorHandler: function (error) {
+    if (error && error.status) {
+      console.warn('[Aion Imaging] DICOMweb', error.status);
+    }
+  },
   defaultDataSourceName: 'dicomweb',
   dataSources: [
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
       sourceName: 'dicomweb',
       configuration: {
-        friendlyName: 'MedView (Nest proxy)',
-        name: 'medview',
+        friendlyName: 'Aion Imaging — PACS',
+        name: 'aion',
         wadoUriRoot: ${json(dicomRoot)},
         qidoRoot: ${json(dicomRoot)},
         wadoRoot: ${json(dicomRoot)},
