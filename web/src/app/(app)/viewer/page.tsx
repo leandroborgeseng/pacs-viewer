@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, Suspense, useRef, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,18 +11,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { ConnectionPill } from "@/components/aion/connection-pill";
-
-/** Caminho público onde o build do viewer DICOM é servido (mesmo domínio do Next). */
-const VIEWER_BASE =
-  (process.env.NEXT_PUBLIC_OHIF_BASE_PATH ?? "/ohif").replace(/\/$/, "") || "/ohif";
+import { openOhifStudyWindow, buildOhifViewerAbsoluteUrl } from "@/lib/ohif-window";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function ViewerPage() {
   return (
     <Suspense
       fallback={
-        <p className="text-sm text-muted-foreground">A carregar visualizador…</p>
+        <p className="text-sm text-muted-foreground">A carregar…</p>
       }
     >
       <ViewerInner />
@@ -30,61 +32,30 @@ export default function ViewerPage() {
 
 function ViewerInner() {
   const params = useSearchParams();
-  const router = useRouter();
   const studyUID = params.get("studyUID");
-  const { token, user, logout } = useAuth();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { token, user } = useAuth();
 
-  const src = useMemo(() => {
-    if (!studyUID || !token) return null;
-    const q = new URLSearchParams({
-      StudyInstanceUIDs: studyUID,
-      access_token: token,
-    });
-    const hash = user?.role === "PACIENTE" ? "#patient" : "";
-    return `${VIEWER_BASE}/viewer?${q.toString()}${hash}`;
-  }, [studyUID, token, user?.role]);
+  const canOpen = Boolean(studyUID && token && user);
 
-  const pushSessionToIframe = useCallback(() => {
-    const win = iframeRef.current?.contentWindow;
-    if (!win || !user || typeof window === "undefined") return;
-    try {
-      win.postMessage(
-        {
-          source: "aion-parent",
-          type: "SESSION",
-          user: {
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          },
-        },
-        window.location.origin,
+  const absoluteUrl = useMemo(() => {
+    if (!canOpen || !studyUID || !token || !user) return null;
+    return buildOhifViewerAbsoluteUrl(studyUID, token, user.role);
+  }, [canOpen, studyUID, token, user]);
+
+  function handleOpenWindow() {
+    if (!studyUID || !token || !user) {
+      toast.error("Dados de sessão em falta.");
+      return;
+    }
+    const win = openOhifStudyWindow(studyUID, token, user);
+    if (!win) {
+      toast.error(
+        "Pop-up bloqueado. Permita janelas para este site ou abra o link manualmente abaixo.",
       );
-    } catch {
-      /* ignore */
+    } else {
+      toast.success("Visualizador aberto noutra janela.");
     }
-  }, [user]);
-
-  useEffect(() => {
-    function onMessage(ev: MessageEvent) {
-      if (typeof window === "undefined" || ev.origin !== window.location.origin) {
-        return;
-      }
-      const d = ev.data as { source?: string; type?: string } | null;
-      if (!d || d.source !== "aion-iframe" || d.type !== "AION_LOGOUT") return;
-      logout();
-      router.replace("/login");
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [logout, router]);
-
-  useEffect(() => {
-    if (src && user) {
-      pushSessionToIframe();
-    }
-  }, [src, user, pushSessionToIframe]);
+  }
 
   return (
     <div className="space-y-4">
@@ -92,10 +63,9 @@ function ViewerInner() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Visualizador clínico</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Motor DICOMweb certificado para leitura integrada. O tráfego de imagem passa pelo seu
-            backend institucional — o browser não contacta o PACS directamente. No canto inferior do
-            viewer aparece a sessão do portal; <strong className="text-foreground/90">Sair</strong>{" "}
-            encerra a sessão em todo o site.
+            Por defeito o estudo abre numa <strong className="text-foreground/90">janela própria</strong>{" "}
+            no tamanho do ecrã — melhor para leitura diagnóstica. O token continua no URL desta
+            janela; o PACS continua a ser acedido apenas via proxy no backend.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -116,22 +86,52 @@ function ViewerInner() {
         <Card className="border-border/80 bg-card/50 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-base">Parâmetro em falta</CardTitle>
-            <CardDescription>Abra um estudo a partir da lista de exames.</CardDescription>
+            <CardDescription>
+              <Link href="/exames" className="text-primary underline-offset-4 hover:underline">
+                Vá à lista de exames
+              </Link>{" "}
+              e abra um estudo.
+            </CardDescription>
           </CardHeader>
         </Card>
       )}
-      {studyUID && src && (
-        <Card className="overflow-hidden border-border/80 p-0 shadow-xl shadow-black/20">
-          <CardContent className="p-0">
-            <div className="relative h-[min(82vh,920px)] w-full min-h-[420px] rounded-b-lg bg-black md:min-h-[520px]">
-              <iframe
-                ref={iframeRef}
-                title="Aion Imaging — visualizador DICOM"
-                src={src}
-                className="size-full border-0"
-                onLoad={pushSessionToIframe}
-              />
-            </div>
+
+      {studyUID && (
+        <Card className="border-border/80 bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-base">Abrir leitura</CardTitle>
+            <CardDescription>
+              Utilize o botão para abrir ou reabrir a janela do visualizador. Se o browser pedir,
+              autorize pop-ups para este domínio.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button
+              type="button"
+              size="lg"
+              className="gap-2 bg-primary shadow-lg shadow-primary/25"
+              disabled={!canOpen}
+              onClick={handleOpenWindow}
+            >
+              <ExternalLink className="size-4" aria-hidden />
+              Abrir em janela (ecrã completo)
+            </Button>
+            <Link
+              href="/exames"
+              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+            >
+              Voltar aos exames
+            </Link>
+            {absoluteUrl ? (
+              <div className="w-full min-w-0 sm:w-full">
+                <p className="mb-1 text-xs text-muted-foreground">
+                  Link directo (se o pop-up falhar, copie ou abra num novo separador):
+                </p>
+                <code className="block max-h-24 overflow-auto rounded-md border border-border/80 bg-background/80 p-2 text-[10px] leading-snug break-all text-muted-foreground">
+                  {absoluteUrl}
+                </code>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       )}

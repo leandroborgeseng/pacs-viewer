@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
 import { ExternalLink, Search } from "lucide-react";
 import { apiFetch, type StudyRow } from "@/lib/api";
+import { openOhifStudyWindow } from "@/lib/ohif-window";
+import { useAuth } from "@/context/auth-context";
 import {
   Table,
   TableBody,
@@ -13,13 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export default function ExamesPage() {
+  const { token, user } = useAuth();
   const [rows, setRows] = useState<StudyRow[] | null>(null);
   const [query, setQuery] = useState("");
 
@@ -48,12 +49,27 @@ export default function ExamesPage() {
       );
     }) ?? null;
 
+  function handleOpenStudy(studyInstanceUID: string) {
+    if (!token || !user) {
+      toast.error("Sessão inválida. Volte a iniciar sessão.");
+      return;
+    }
+    const win = openOhifStudyWindow(studyInstanceUID, token, user);
+    if (!win) {
+      toast.error(
+        "O browser bloqueou a nova janela. Permita pop-ups para este site ou use o botão «Abrir estudo» outra vez.",
+      );
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Exames</h1>
         <p className="text-muted-foreground">
-          Catálogo sincronizado com o PACS institucional · leitura segura no visualizador clínico.
+          Catálogo sincronizado com o PACS institucional · leitura em{" "}
+          <strong className="font-medium text-foreground/90">janela dedicada</strong> para melhor
+          uso do ecrã.
         </p>
       </div>
 
@@ -62,7 +78,8 @@ export default function ExamesPage() {
           <div>
             <CardTitle className="text-base">Lista de estudos</CardTitle>
             <CardDescription>
-              Pesquisa em tempo real no catálogo · abertura com JWT e proxy DICOMweb.
+              Pesquisa em tempo real · o visualizador abre maximizado noutra janela (JWT no URL,
+              habitual em viewers clínicos).
             </CardDescription>
           </div>
           <div className="relative w-full sm:w-72">
@@ -132,16 +149,15 @@ export default function ExamesPage() {
                         {s.studyInstanceUID}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Link
-                          href={`/viewer?studyUID=${encodeURIComponent(s.studyInstanceUID)}`}
-                          className={cn(
-                            buttonVariants({ variant: "default", size: "sm" }),
-                            "gap-1.5 bg-primary shadow-md shadow-primary/20 transition group-hover:brightness-110",
-                          )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="gap-1.5 shadow-md shadow-primary/20"
+                          onClick={() => handleOpenStudy(s.studyInstanceUID)}
                         >
                           Abrir estudo
                           <ExternalLink className="size-3.5 opacity-80" aria-hidden />
-                        </Link>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -60,11 +60,26 @@
     if (btn) {
       btn.addEventListener("click", function () {
         try {
-          window.parent.postMessage(
-            { source: "aion-iframe", type: "AION_LOGOUT", ts: Date.now() },
-            window.location.origin,
-          );
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(
+              { source: "aion-iframe", type: "AION_LOGOUT", ts: Date.now() },
+              window.location.origin,
+            );
+          } else if (window.parent && window.parent !== window) {
+            window.parent.postMessage(
+              { source: "aion-iframe", type: "AION_LOGOUT", ts: Date.now() },
+              window.location.origin,
+            );
+          }
         } catch (_e) {}
+        try {
+          window.close();
+        } catch (_e2) {}
+        setTimeout(function () {
+          try {
+            window.location.href = new URL("/login", window.location.origin).href;
+          } catch (_e3) {}
+        }, 200);
       });
     }
   }

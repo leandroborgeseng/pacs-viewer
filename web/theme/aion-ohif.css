@@ -1,31 +1,43 @@
 /**
  * Aion Imaging — overrides visuais sobre o bundle OHIF v3 (carregado após o CSS principal).
- * Não altera lógica DICOM; apenas tokens visuais e remoção de elementos de branding OHIF.
+ * Tipografia própria + paleta distinta do tema OHIF por defeito.
  */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..700;1,400..700&display=swap");
+
 :root {
-  --aion-bg: #0b1120;
-  --aion-surface: #111827;
-  --aion-border: #1f2937;
-  --aion-text: #e5e7eb;
-  --aion-text-muted: #9ca3af;
+  --aion-bg: #070b14;
+  --aion-bg-elevated: #0b1120;
+  --aion-surface: #101a2c;
+  --aion-border: #243044;
+  --aion-text: #e8eaef;
+  --aion-text-muted: #8b95a8;
   --aion-primary: #0066b2;
-  --aion-primary-hover: #0078cc;
-  --aion-primary-glow: rgba(0, 102, 178, 0.35);
+  --aion-primary-hover: #0a7fd4;
+  --aion-primary-glow: rgba(0, 132, 255, 0.22);
   --aion-accent: #ff4f00;
+  --aion-accent-glow: rgba(255, 79, 0, 0.18);
+  --aion-viewport-bg: #020612;
 }
 
 /* Base */
-html,
 body {
-  background-color: var(--aion-bg) !important;
+  background-color: transparent !important;
   color: var(--aion-text) !important;
 }
 
 /* Tipografia global dentro do viewer */
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif !important;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif !important;
   -webkit-font-smoothing: antialiased;
+}
+
+/* “Ar” clínico — gradiente subtil de fundo (padrão PACS escuro) */
+html {
+  background: radial-gradient(120% 80% at 10% -10%, rgba(0, 102, 178, 0.14), transparent 45%),
+    radial-gradient(90% 60% at 100% 0%, rgba(255, 79, 0, 0.06), transparent 40%),
+    var(--aion-bg) !important;
+  color: var(--aion-text);
 }
 
 /* Barra superior — glass + fina */
@@ -56,7 +68,7 @@ div.border-black {
 }
 .text-primary-active,
 .text-primary-light {
-  color: #7cc4f8 !important;
+  color: #5eb8ff !important;
 }
 .border-primary-dark {
   border-color: var(--aion-border) !important;
