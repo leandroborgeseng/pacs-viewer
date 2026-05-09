@@ -16,7 +16,7 @@ Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), back
 
 - `api/` — NestJS, Prisma, proxy DICOMweb, auditoria básica.
 - `web/` — Next.js 15, login, dashboard, exames, viewer iframe; **OHIF v3.8.3** compilado no Docker e servido em **`/ohif`**.  
-- `web/scripts/write-ohif-app-config.mjs` — gera `public/ohif/app-config.js` com a URL pública da API (`…/api/dicomweb`).  
+- `web/scripts/write-ohif-app-config.mjs` — gera `public/ohif/app-config.js`: o OHIF usa **mesma origem** que o portal (`…/bb-api/dicomweb`), e o Next encaminha para `NEXT_PUBLIC_API_URL/dicomweb` (evita CORS/CSP no viewer).  
 - `web/scripts/inject-ohif-assets.mjs` — copia fontes Montserrat para `public/ohif/fonts/` e injeta `bluebeaver-ohif.css` + `bluebeaver-iframe-bridge.js` no `index.html` do OHIF.
 - `web/ohif-version` — tag Git do OHIF usada no build Docker.  
 - `infra/ohif/app-config.js` — apenas referência legada (contentor separado); não é necessário no fluxo integrado.
@@ -124,7 +124,7 @@ O **seed** (`prisma/seed.js`) corre **automaticamente** após `prisma migrate de
 
 ## Integração OHIF ↔ JWT
 
-O iframe abre `/ohif/viewer?StudyInstanceUIDs=…&access_token=…`. O `app-config.js` gerado no build envia `Authorization: Bearer` em cada pedido ao proxy. O Nest aceita JWT no **header** ou na query `access_token`.
+O iframe abre `/ohif/viewer?StudyInstanceUIDs=…&access_token=…`. O OHIF faz QIDO/WADO para **`{origem-do-portal}/bb-api/dicomweb`** (proxy no **Next** → `/api/dicomweb` na API). O Nest aceita JWT no **header** ou na query `access_token`.
 
 Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o browser continua a contactar só o Nest.
 
@@ -164,7 +164,7 @@ Se o healthcheck falhar, abra **Deploy Logs**: mensagens como `Variável obrigat
 6. Se ainda aparecer **P1012** no Web, confirma que o ficheiro de config desse serviço é mesmo **`web/railway.json`** (não o da API) e faz **Redeploy**.  
 7. Se o build da **API** falhar com **Railpack** (“could not determine how to build”), o projeto passou a ter **`Dockerfile` na raiz** (Nest). No serviço API usa **Docker** / **`Dockerfile`** ou o config `api/railway.json`. O **Web** continua com **`web/Dockerfile`** (não uses só o `./Dockerfile` da raiz no serviço Web).
 
-Em produção use HTTPS; o `app-config.js` incorpora a URL da API definida no momento do build.
+Em produção use HTTPS; o rewrite DICOMweb usa `NEXT_PUBLIC_API_URL` definida no **build** do Web (destino do proxy `/bb-api/dicomweb`).
 
 **502 no domínio público do serviço Web** — o proxy do Railway encaminha para **a mesma porta em que o Node está a ouvir** (`process.env.PORT` injetado pelo Railway). Se no **Networking** definires manualmente **“porta 3000”** mas o Railway tiver definido `PORT` para outro valor (ex. `8080`), nada ouve na 3000 e aparece **502**. **Correção:** no serviço **Web** → **Networking**, remove a porta personalizada e volta a **gerar o domínio** (configuração por defeito), *ou* define **Target port = `$PORT`** / o valor que Railway mostra nas docs, *ou* garante explicitamente nas **Variables** `PORT=3000` **e** target 3000 — mas o mais simples é **não forçar 3000** e deixar o Railway alinhar com `PORT`. Confirma nos **Deploy Logs** que `node server.js` arrancou sem erro.
 

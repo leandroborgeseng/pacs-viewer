@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
 
+/** API base (…/api) para proxy DICOMweb no mesmo domínio que o portal/OHIF. */
+function apiBaseForProxy(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_API_URL?.trim() ?? "http://127.0.0.1:3001/api";
+  return raw.replace(/\/+$/, "");
+}
+
 /** Segmento de URL (sem / inicial) onde o OHIF estático é servido. */
 const ohifSegment =
   (process.env.NEXT_PUBLIC_OHIF_BASE_PATH ?? "/ohif").replace(
@@ -53,7 +60,15 @@ const nextConfig: NextConfig = {
    */
   async rewrites() {
     const b = ohifSegment;
+    const apiBase = apiBaseForProxy();
     return {
+      /** OHIF QIDO/WADO via mesmo origem que a página (evita CORS/CSP para o host da API). */
+      beforeFiles: [
+        {
+          source: "/bb-api/dicomweb/:path*",
+          destination: `${apiBase}/dicomweb/:path*`,
+        },
+      ],
       afterFiles: [
         { source: `/${b}`, destination: `/${b}/index.html` },
         { source: `/${b}/`, destination: `/${b}/index.html` },
