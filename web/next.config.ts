@@ -7,6 +7,42 @@ const ohifSegment =
     "",
   ) || "ohif";
 
+/** Origem da API quando `NEXT_PUBLIC_API_URL` é absoluto (para `connect-src`). */
+function apiOriginForCsp(): string {
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (!raw || raw.startsWith("/")) return "";
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return "";
+  }
+}
+
+/** CSP em produção: sem Google Fonts/ext. no OHIF; fetch à API alinhado ao env. */
+function productionContentSecurityPolicy(): string {
+  const api = apiOriginForCsp();
+  const connect =
+    api && api.length > 0
+      ? `'self' blob: data: ${api}`
+      : "'self' blob: data:";
+  const parts = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+    "object-src 'none'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    `connect-src ${connect}`,
+    "worker-src 'self' blob:",
+    "media-src 'self' blob: data:",
+    "upgrade-insecure-requests",
+  ];
+  return parts.join("; ");
+}
+
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
@@ -26,6 +62,22 @@ const nextConfig: NextConfig = {
         { source: `/${b}/viewer/:path*`, destination: `/${b}/index.html` },
       ],
     };
+  },
+  async headers() {
+    if (process.env.NODE_ENV !== "production") {
+      return [];
+    }
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: productionContentSecurityPolicy(),
+          },
+        ],
+      },
+    ];
   },
 };
 

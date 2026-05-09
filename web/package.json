@@ -8,10 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "ohif:config": "node scripts/write-ohif-app-config.mjs",
-    "ohif:inject": "node scripts/inject-ohif-assets.mjs"
+    "ohif:inject": "node scripts/inject-ohif-assets.mjs",
+    "ohif:fonts": "node scripts/run-copy-ohif-fonts.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@fontsource-variable/montserrat": "^5.2.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
@@ -27,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

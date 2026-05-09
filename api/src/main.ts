@@ -91,12 +91,20 @@ async function bootstrap() {
           /* ignore */
         }
       }
-      console.warn(`[bootstrap] CORS recusado: ${normalized}`);
+      console.warn(
+        JSON.stringify({
+          event: 'cors.denied',
+          origin: normalized,
+          nodeEnv: process.env.NODE_ENV ?? null,
+          allowRailwayPublic,
+        }),
+      );
       callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    maxAge: 86_400,
   });
   app.use(cookieParser());
   app.useGlobalPipes(

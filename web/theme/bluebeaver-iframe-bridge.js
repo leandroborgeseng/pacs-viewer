@@ -20,6 +20,49 @@
     return String(name).slice(0, 2).toUpperCase();
   }
 
+  function fullscreenActive() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(function () {});
+    } else if (document.webkitExitFullscreen) {
+      try {
+        document.webkitExitFullscreen();
+      } catch (_e) {}
+    }
+  }
+
+  function requestFullscreen() {
+    var root = document.documentElement;
+    var p = root.requestFullscreen && root.requestFullscreen();
+    if (p && typeof p.then === "function") {
+      p.catch(function () {});
+    } else if (root.webkitRequestFullscreen) {
+      try {
+        root.webkitRequestFullscreen();
+      } catch (_e) {}
+    }
+  }
+
+  function syncFullscreenButton() {
+    var fsBtn = document.querySelector("[data-bb-fs]");
+    if (!fsBtn) return;
+    var on = fullscreenActive();
+    fsBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    fsBtn.textContent = on ? "Sair ecrã cheio" : "Ecrã cheio";
+  }
+
+  function wireFullscreenButton(btn) {
+    if (!btn || btn.dataset.bbFsWired === "1") return;
+    btn.dataset.bbFsWired = "1";
+    btn.addEventListener("click", function () {
+      if (fullscreenActive()) exitFullscreen();
+      else requestFullscreen();
+    });
+  }
+
   function render() {
     var el = document.getElementById("bb-viewer-chrome");
     if (!el) {
@@ -53,8 +96,11 @@
       esc(r) +
       "</span>" +
       "</div>" +
+      '<button type="button" class="bb-chrome-fs" data-bb-fs aria-pressed="false" title="Alternar ecrã completo">Ecrã cheio</button>' +
       '<button type="button" class="bb-chrome-logout" data-bb-logout>Sair</button>' +
       "</div>";
+    wireFullscreenButton(el.querySelector("[data-bb-fs]"));
+    syncFullscreenButton();
     var btn = el.querySelector("[data-bb-logout]");
     if (btn) {
       btn.addEventListener("click", function () {
@@ -82,6 +128,9 @@
       });
     }
   }
+
+  document.addEventListener("fullscreenchange", syncFullscreenButton);
+  document.addEventListener("webkitfullscreenchange", syncFullscreenButton);
 
   window.addEventListener("message", function (ev) {
     try {

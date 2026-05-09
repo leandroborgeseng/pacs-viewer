@@ -1,6 +1,6 @@
-# MedView — Portal médico (OHIF v3 + NestJS + Next.js)
+# BlueBeaver — Portal médico (OHIF v3 + NestJS + Next.js)
 
-Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), backend em **NestJS** com **Prisma/PostgreSQL**, autenticação **JWT** e **RBAC** (ADMIN, MEDICO, PACIENTE). O **Orthanc** expõe DICOMweb apenas ao backend; o browser fala com o **proxy** `/api/dicomweb`, nunca diretamente com o PACS.
+Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), backend em **NestJS** com **Prisma/PostgreSQL**, autenticação **JWT** e **RBAC** (ADMIN, MEDICO, PACIENTE). O **Orthanc** expõe DICOMweb apenas ao backend; o browser fala com o **proxy** `/api/dicomweb`, nunca diretamente com o PACS. O viewer OHIF usa tema **BlueBeaver** (CSS/bridge inject no build), tipografia Montserrat **local** em `/ohif/fonts/` e **CSP** aplicada ao portal em produção.
 
 ## Perfis e regras
 
@@ -17,6 +17,7 @@ Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), back
 - `api/` — NestJS, Prisma, proxy DICOMweb, auditoria básica.
 - `web/` — Next.js 15, login, dashboard, exames, viewer iframe; **OHIF v3.8.3** compilado no Docker e servido em **`/ohif`**.  
 - `web/scripts/write-ohif-app-config.mjs` — gera `public/ohif/app-config.js` com a URL pública da API (`…/api/dicomweb`).  
+- `web/scripts/inject-ohif-assets.mjs` — copia fontes Montserrat para `public/ohif/fonts/` e injeta `bluebeaver-ohif.css` + `bluebeaver-iframe-bridge.js` no `index.html` do OHIF.
 - `web/ohif-version` — tag Git do OHIF usada no build Docker.  
 - `infra/ohif/app-config.js` — apenas referência legada (contentor separado); não é necessário no fluxo integrado.
 - `docker-compose.yml` — Postgres, Orthanc, API, Web *(OHIF já incluído na imagem Web)*.
@@ -95,6 +96,19 @@ Defina `SEED_STUDY_INSTANCE_UID` no `.env` da API para coincidir com um estudo r
 
 > O separador **Exames / OHIF** em `/viewer` só funciona se existir uma pasta `web/public/ohif` (por exemplo após `docker compose build web`). O resto do portal funciona normalmente.
 
+### Testes E2E (Playwright)
+
+Com a stack completa no ar (`docker compose up --build` na raiz), na pasta `web/`:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+O cenário `e2e/portal-ohif.spec.ts` cobre **login → exames → nova janela OHIF** e espera um pedido **GET/HEAD** ao proxy **`/api/dicomweb/`** com código HTTP inferior a 500. Variável opcional: `PLAYWRIGHT_BASE_URL` (por defeito `http://localhost:3000`).  
+Para imagens reais no viewer, carregue no **Orthanc** um estudo cujo UID coincida com o seed (ou defina `SEED_STUDY_INSTANCE_UID`).
+
 ## Docker Compose
 
 ```bash
@@ -102,8 +116,9 @@ docker compose up --build
 ```
 
 - Portal + **OHIF integrado**: `http://localhost:3000` (viewer em `http://localhost:3000/ohif/...`)  
+- PACS: o compose está configurado para **DICOMweb remoto** (`ORTHANC_DICOMWEB_ROOT` no `docker-compose.yml` — ajuste antes de produção).  
 - API: `http://localhost:3001/api`  
-- Orthanc: `http://localhost:8042`
+- **Orthanc local (opcional):** `docker compose --profile local-pacs up --build` inclui o serviço em `http://localhost:8042` para desenvolvimento sem PACS remoto.
 
 O **seed** (`prisma/seed.js`) corre **automaticamente** após `prisma migrate deploy` em cada arranque da API (Dockerfile / Railway). Nos três e-mails de demo, o `upsert` **atualiza** `passwordHash` e `active` — útil se a base já tinha utilizadores com password errada; em produção real mude passwords ou remova o seed automático.
 
@@ -163,9 +178,22 @@ Auditoria: interceptor em mutações (exceto login e tráfego DICOMweb).
 
 ## Segurança (MVP)
 
-- JWT em `localStorage` no browser é aceitável para MVP interno; evolua para **HttpOnly cookies** + **BFF** se necessário.  
+- **`JWT_EXPIRES_SEC`**: interpretado em segundos com **clamp** entre **300** e **604800** (7 dias); valores fora do intervalo são ajustados e regista-se um aviso no arranque da API. Os tokens continuam só no **Authorization** (e opcionalmente na query do OHIF); não há refresh token nesta versão — sessões longas implicam re-login ou subir o TTL com consciência do risco.  
+- **CORS**: origens a partir de `WEB_ORIGIN` (lista separada por vírgulas); em produção, `*.up.railway.app` continua permitido salvo `CORS_ALLOW_RAILWAY_PUBLIC=0`. Recusas passam a ser registadas como **JSON** (`event: "cors.denied"`). Foi definido `maxAge` de 24 h para respostas preflight. Pedidos **sem** cabeçalho `Origin` continuam aceites (útil para ferramentas tipo `curl` e alguns healthchecks); o browser em uso normal no portal envia `Origin` nas chamadas cross-origin para a API.  
+- Em **produção**, o serviço Web envia cabeçalho **`Content-Security-Policy`** (sem dependência de domínios externos no viewer; `connect-src` inclui a origem derivada de `NEXT_PUBLIC_API_URL` quando é URL absoluta). Em `next dev` o cabeçalho não é aplicado para não quebrar Turbopack / WebSockets.  
+- **Cookies HttpOnly / BFF (roadmap)** — passos típicos para retirar o JWT do `localStorage`: (1) endpoint de login na mesma origem que o browser (BFF Next ou API atrás do mesmo domínio reverso); (2) `Set-Cookie` com `HttpOnly`, `Secure`, `SameSite` adequado (**são** muitas vezes `lax` ou `strict` conforme iframe/pop-up); (3) CSRF se usar cookies em mutações (token duplo cookie, ou `SameSite=strict` com cuidado com OHIF em pop-up); (4) o viewer OHIF deixa de levar token na query — ex.: cookie de sessão visível só no domínio da API com `credentials: 'include'` no fetch do `app-config` / axios (implica CORS com `credentials` e origem explícita). Esta arquitetura não está implementada no MVP actual; convém planear antes de exposição ampla na Internet.  
 - Token na query do OHIF pode aparecer em logs de proxies — minimize retention e use HTTPS.  
 - Rate limit global (`ThrottlerModule`) aplicado à API.
+
+## Observabilidade (proxy DICOMweb)
+
+Cada pedido ao proxy **`/api/dicomweb`** gera linhas de log em JSON (nível `log`) com o `Logger` do Nest, por exemplo:
+
+- `event: "dicomweb.proxy"` — método, caminho do cliente (com `access_token=[redacted]` na query), caminho upstream, `statusCode`, `durationMs`, `userId`, `role`, `bytesOut` quando disponível.  
+- `event: "dicomweb.access_denied"` — tentativa de acesso a estudo não autorizado.  
+- `event: "dicomweb.upstream_error"` — falha ao contactar o Orthanc (mensagem de erro interna, sem corpo clínico).
+
+Isto facilita filtrar no agregador de logs (Datadog, Cloud Logging, etc.) antes da primeira integração PACS.
 
 ## Licença
 

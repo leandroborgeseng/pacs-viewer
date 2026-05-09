@@ -1,3 +1,6 @@
+# Stack local: API + Web + Postgres. PACS Orthanc remoto (teste antes de produção).
+# Ver README para variáveis de produção.
+
 services:
   db:
     image: postgres:16-alpine
@@ -14,6 +17,8 @@ services:
   orthanc:
     image: jodogne/orthanc-plugins:1.12.4
     restart: unless-stopped
+    profiles:
+      - local-pacs
     ports:
       - "8042:8042"
       - "4242:4242"
@@ -31,12 +36,14 @@ services:
       JWT_SECRET: dev-change-this-to-a-long-random-string
       JWT_EXPIRES_SEC: "28800"
       WEB_ORIGIN: http://localhost:3000
-      ORTHANC_DICOMWEB_ROOT: http://orthanc:8042/dicom-web
+      # Orthanc remoto (AE AIONPACS / DICOM 4242) — DICOMweb HTTP na porta 8042
+      ORTHANC_DICOMWEB_ROOT: http://189.90.139.222:8042/dicom-web
+      # Alinha o seed com um estudo existente no PACS (ajuste ou vazio para o default do seed)
+      SEED_STUDY_INSTANCE_UID: "1.2.276.0.7230010.3.1.2.0.29108.1775763951.440112"
     ports:
       - "3001:3000"
     depends_on:
       - db
-      - orthanc
 
   web:
     build:

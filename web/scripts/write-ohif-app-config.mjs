@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gera public/ohif/app-config.js após copiar o build estático do OHIF.
- * MEDVIEW_API_BASE ou NEXT_PUBLIC_API_URL deve ser a URL pública completa da API
+ * `MEDVIEW_API_BASE` ou `NEXT_PUBLIC_API_URL` deve ser a URL pública completa da API
  * (ex.: https://api.seuprojecto.up.railway.app/api).
  */
 import fs from "fs";

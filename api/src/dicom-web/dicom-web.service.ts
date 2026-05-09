@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -15,6 +16,8 @@ const STUDY_UID_TAG = '0020000D';
 
 @Injectable()
 export class DicomWebService {
+  private readonly logger = new Logger(DicomWebService.name);
+
   constructor(
     private http: HttpService,
     private config: ConfigService,
@@ -34,11 +37,41 @@ export class DicomWebService {
     const allowed = await this.access.getAllowedStudyInstanceUIDs(user);
 
     if (studyFromPath && !this.isAllowed(studyFromPath, allowed, user.role)) {
+      this.logJson({
+        event: 'dicomweb.access_denied',
+        clientPath: this.redactClientPath(req.originalUrl ?? ''),
+        upstreamPath: upstreamUrl.pathname,
+        studyInstanceUID: studyFromPath,
+        userId: user.sub,
+        role: user.role,
+      });
       throw new ForbiddenException('Sem acesso a este estudo DICOMweb');
     }
 
     const method = (req.method ?? 'GET').toUpperCase();
     const headers = this.buildUpstreamHeaders(req);
+    const t0 = process.hrtime.bigint();
+    res.on('finish', () => {
+      const durationMs =
+        Math.round(Number(process.hrtime.bigint() - t0) / 1e6) / 1000;
+      const len = res.getHeader('content-length');
+      this.logJson({
+        event: 'dicomweb.proxy',
+        method,
+        clientPath: this.redactClientPath(req.originalUrl ?? ''),
+        upstreamPath: `${upstreamUrl.pathname}${upstreamUrl.search}`,
+        statusCode: res.statusCode,
+        durationMs,
+        userId: user.sub,
+        role: user.role,
+        bytesOut:
+          typeof len === 'number'
+            ? len
+            : typeof len === 'string'
+              ? Number.parseInt(len, 10)
+              : undefined,
+      });
+    });
 
     try {
       const response = await firstValueFrom(
@@ -74,10 +107,39 @@ export class DicomWebService {
       const body = Buffer.from(response.data);
       this.forwardHeaders(res, response.headers, body.length);
       res.status(response.status).send(body);
-    } catch {
+    } catch (err) {
+      this.logJson({
+        event: 'dicomweb.upstream_error',
+        clientPath: this.redactClientPath(req.originalUrl ?? ''),
+        upstreamPath: upstreamUrl.toString().split('?')[0],
+        method,
+        userId: user.sub,
+        role: user.role,
+        error: err instanceof Error ? err.message : String(err),
+      });
       throw new ServiceUnavailableException(
         'Orthanc/DICOMweb indisponível. Verifique ORTHANC_DICOMWEB_ROOT.',
       );
+    }
+  }
+
+  private logJson(payload: Record<string, unknown>) {
+    this.logger.log(JSON.stringify(payload));
+  }
+
+  /** Remove credenciais sensíveis da query (ex.: access_token no OHIF). */
+  private redactClientPath(pathAndQuery: string): string {
+    const qIdx = pathAndQuery.indexOf('?');
+    if (qIdx < 0) return pathAndQuery;
+    const path = pathAndQuery.slice(0, qIdx);
+    const qs = pathAndQuery.slice(qIdx + 1);
+    try {
+      const sp = new URLSearchParams(qs);
+      if (sp.has('access_token')) sp.set('access_token', '[redacted]');
+      const next = sp.toString();
+      return next ? `${path}?${next}` : path;
+    } catch {
+      return `${path}?[unparsed-query]`;
     }
   }
 

@@ -5,6 +5,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { copyOhifFonts } from "./copy-ohif-fonts.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicOhif = path.join(__dirname, "..", "public", "ohif");
@@ -21,6 +22,8 @@ if (!fs.existsSync(indexPath)) {
   console.warn("[bluebeaver-ohif] sem index.html em public/ohif — ignorado.");
   process.exit(0);
 }
+
+copyOhifFonts();
 
 for (const [src, dest, label] of [
   [cssSrc, cssDest, "bluebeaver-ohif.css"],

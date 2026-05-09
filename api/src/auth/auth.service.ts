@@ -6,6 +6,7 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { AuditService } from '../audit/audit.service';
+import { resolveJwtExpiresSec } from '../common/jwt-expires';
 
 export type AuthUserView = {
   id: string;
@@ -37,10 +38,7 @@ export class AuthService {
 
   async login(dto: LoginDto, ip?: string) {
     const user = await this.validateCredentials(dto.email, dto.password);
-    const expiresSec =
-      Number(this.config.get('JWT_EXPIRES_SEC')) > 0
-        ? Number(this.config.get('JWT_EXPIRES_SEC'))
-        : 28_800;
+    const expiresSec = resolveJwtExpiresSec(this.config.get('JWT_EXPIRES_SEC'));
     const access_token = await this.jwt.signAsync(
       {
         sub: user.id,
