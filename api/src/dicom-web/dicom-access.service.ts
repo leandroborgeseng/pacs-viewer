@@ -32,6 +32,7 @@ export class DicomAccessService {
     user: RequestUser,
     studyInstanceUID: string,
   ): Promise<boolean> {
+    if (user.role === Role.ADMIN) return true;
     const allowed = await this.getAllowedStudyInstanceUIDs(user);
     return allowed.has(studyInstanceUID);
   }

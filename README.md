@@ -128,6 +128,8 @@ O iframe abre `/ohif/viewer?StudyInstanceUIDs=…&access_token=…`. O `app-conf
 
 Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o browser continua a contactar só o Nest.
 
+**Lista em Exames (`GET /api/studies/me`):** os metadados vêm do **PACS** (QIDO `GET …/dicom-web/studies`). **ADMIN** vê todos os estudos devolvidos pelo Orthanc. **MEDICO** e **PACIENTE** só vêem estudos cujo `StudyInstanceUID` está autorizado na base (permissões / paciente); é necessário existir registo `Study` com o mesmo UID no portal para amarrar permissões (o catálogo continua a ser filtrado a partir dos dados do PACS).
+
 ## Railway
 
 **Ligar PostgreSQL no Railway**

@@ -3,6 +3,7 @@ import { HttpModule } from '@nestjs/axios';
 import { DicomWebController } from './dicom-web.controller';
 import { DicomWebService } from './dicom-web.service';
 import { DicomAccessService } from './dicom-access.service';
+import { OrthancDicomWebClient } from './orthanc-dicomweb.client';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { DicomAccessService } from './dicom-access.service';
     }),
   ],
   controllers: [DicomWebController],
-  providers: [DicomWebService, DicomAccessService],
-  exports: [DicomAccessService],
+  providers: [DicomWebService, DicomAccessService, OrthancDicomWebClient],
+  exports: [DicomAccessService, OrthancDicomWebClient],
 })
 export class DicomWebModule {}
