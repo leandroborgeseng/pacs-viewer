@@ -2,6 +2,7 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -15,14 +16,46 @@ import { Role } from '@prisma/client';
 const STUDY_UID_TAG = '0020000D';
 
 @Injectable()
-export class DicomWebService {
+export class DicomWebService implements OnModuleInit {
   private readonly logger = new Logger(DicomWebService.name);
+  /** Evita spam quando WEB_ORIGIN não está definido. */
+  private warnedMissingWebOrigin = false;
 
   constructor(
     private http: HttpService,
     private config: ConfigService,
     private access: DicomAccessService,
   ) {}
+
+  onModuleInit() {
+    const web = this.config.get<string>('WEB_ORIGIN')?.trim();
+    const orthanc = this.upstreamBase();
+    const proxyDebug =
+      String(this.config.get<string>('DICOMWEB_PROXY_DEBUG') ?? '').trim() ===
+      '1';
+    /* Log estável no deploy — procure "dicomweb.bootstrap" nos logs Railway/Docker. */
+    this.logJson({
+      event: 'dicomweb.bootstrap',
+      WEB_ORIGIN_set: Boolean(web && web.length > 0),
+      browser_proxy_dicomweb:
+        web && web.length > 0 ? `${web.replace(/\/+$/, '')}/bb-api/dicomweb` : null,
+      ORTHANC_DICOMWEB_ROOT: orthanc,
+      DICOMWEB_PROXY_DEBUG: proxyDebug,
+      ...(web && web.length > 0
+        ? {}
+        : {
+            problem:
+              'Sem WEB_ORIGIN o proxy não reescreve URLs 00081190 no JSON; o OHIF pode pedir dados ao hostname do Orthanc e falhar (CORS/CSP/mixed content).',
+          }),
+    });
+  }
+
+  private proxyDebugEnabled(): boolean {
+    return (
+      String(this.config.get<string>('DICOMWEB_PROXY_DEBUG') ?? '').trim() ===
+      '1'
+    );
+  }
 
   private upstreamBase(): string {
     const base =
@@ -43,6 +76,14 @@ export class DicomWebService {
 
   async proxy(req: Request, res: Response, user: RequestUser) {
     const upstreamUrl = this.buildUpstreamUrl(req);
+    if (this.proxyDebugEnabled()) {
+      /* Um pedido = uma linha; útil quando o OHIF faz dezenas de chamadas encadeadas. */
+      this.logJson({
+        event: 'dicomweb.proxy_debug',
+        upstream: upstreamUrl.pathname + upstreamUrl.search,
+        jwt_role: user.role,
+      });
+    }
     const studyFromPath = this.extractStudyUidFromPath(upstreamUrl.pathname);
     const allowed = await this.access.getAllowedStudyInstanceUIDs(user);
 
@@ -98,6 +139,19 @@ export class DicomWebService {
       );
 
       const contentType = String(response.headers['content-type'] ?? '');
+      if (response.status >= 400) {
+        this.logJson({
+          event: 'dicomweb.upstream_bad_status',
+          upstreamHttpStatus: response.status,
+          upstreamPath: upstreamUrl.pathname,
+          upstreamQueryHasParams: upstreamUrl.search.length > 1,
+          contentType,
+          hint:
+            response.status === 401 || response.status === 403
+              ? 'Orthanc pode exigir ORTHANC_USERNAME/PASSWORD na API.'
+              : 'Confirmar plugin DICOMweb e URL em ORTHANC_DICOMWEB_ROOT.',
+        });
+      }
       const p = upstreamUrl.pathname;
       const isJsonStudies =
         method === 'GET' &&
@@ -279,14 +333,41 @@ export class DicomWebService {
   /** Reescreve URLs Orthanc em JSON; noop se WEB_ORIGIN ausente. */
   private rewriteDicomJsonBodyIfNeeded(body: Buffer, contentType: string): Buffer {
     const publicRoot = this.browserPublicDicomwebRoot();
-    if (!publicRoot) return body;
     const ct = contentType.toLowerCase();
+    if (!publicRoot) {
+      if (ct.includes('dicom+json')) {
+        if (!this.warnedMissingWebOrigin) {
+          this.warnedMissingWebOrigin = true;
+          this.logger.warn(
+            JSON.stringify({
+              event: 'dicomweb.rewrite_skipped',
+              reason: 'WEB_ORIGIN empty or unset',
+              fix: 'Set WEB_ORIGIN to the portal public URL (e.g. https://app.example.com). Restart API.',
+            }),
+          );
+        }
+      }
+      return body;
+    }
     if (!ct.includes('json')) return body;
     try {
       const text = body.toString('utf8');
       const parsed = JSON.parse(text) as unknown;
       const out = this.rewriteDicomJsonUrlsDeep(parsed, publicRoot);
-      return Buffer.from(JSON.stringify(out), 'utf8');
+      const rewritten = Buffer.from(JSON.stringify(out), 'utf8');
+      if (
+        this.proxyDebugEnabled() &&
+        ct.includes('dicom+json') &&
+        text !== rewritten.toString('utf8')
+      ) {
+        this.logJson({
+          event: 'dicomweb.rewrite_applied',
+          publicRootLengthChars: publicRoot.length,
+          bodyBytesBefore: body.length,
+          bodyBytesAfter: rewritten.length,
+        });
+      }
+      return rewritten;
     } catch {
       return body;
     }

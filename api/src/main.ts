@@ -120,6 +120,9 @@ async function bootstrap() {
     process.env.ORTHANC_DICOMWEB_ROOT?.trim() ||
     '(não definido — QIDO usará http://localhost:8042/dicom-web)';
   console.log(`[bootstrap] ORTHANC_DICOMWEB_ROOT effective check: ${orthancRoot}`);
+  console.log(
+    `[bootstrap] WEB_ORIGIN effective check: ${process.env.WEB_ORIGIN?.trim() || '(vazio — sem reescrita de URLs DICOM JSON)'}`,
+  );
   if (
     process.env.NODE_ENV === 'production' &&
     (!process.env.ORTHANC_DICOMWEB_ROOT?.trim() ||
@@ -127,6 +130,14 @@ async function bootstrap() {
   ) {
     console.warn(
       '[bootstrap] Aviso: em produção ORTHANC_DICOMWEB_ROOT está vazio ou aponta para localhost — o contentor da API não alcança o Orthanc do teu PC. Defina o URL público/privado do PACS nas variáveis do serviço API.',
+    );
+  }
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !process.env.WEB_ORIGIN?.trim()
+  ) {
+    console.warn(
+      '[bootstrap] Aviso: WEB_ORIGIN vazio — o proxy DICOMweb não reescreve links nos JSON (OHIF pode falhar com CORS). Defina WEB_ORIGIN = URL público exacto do Next (portal).',
     );
   }
   await app.listen(port, host);
