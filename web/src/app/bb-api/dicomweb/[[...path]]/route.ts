@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * OHIF usa `Authorization: Bearer` no mesmo origin (`/bb-api/dicomweb/...`).
- * Os `rewrites` em `next.config.ts` nem sempre propagam esse header até à API Nest
- * em `next start`/standalone → 401 nos QIDO/WADO.
- * Este Route Handler faz `fetch` explícito e reencaminha cabeçalhos (incl. Authorization).
+ * Proxy DICOMweb do portal → API Nest (`/api/dicomweb`).
+ *
+ * O OHIF deveria enviar `Authorization: Bearer` (app-config), mas parte dos pedidos
+ * (loaders / workers / fetch interno) pode ir **sem** esse header → 401 na API.
+ * O JWT também vem na query do viewer (`/ohif/viewer?access_token=…`); o browser
+ * envia isso no `Referer` em pedidos same-origin (política por defeito).
+ *
+ * Estratégia: obter token de (1) Bearer, (2) query deste URL, (3) query do Referer
+ * só se for mesma origem; repor `Authorization` no fetch ao Nest. Remove
+ * access_token/token da query repassada para não redundar nos logs upstream.
  */
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -28,12 +34,47 @@ function apiDicomwebOrigin(): string {
 
 function buildTargetUrl(
   pathSegments: string[] | undefined,
-  search: string,
+  searchWithoutToken: string,
 ): string {
   const base = apiDicomwebOrigin();
   const rest =
     pathSegments && pathSegments.length > 0 ? `/${pathSegments.join("/")}` : "";
-  return `${base}/dicomweb${rest}${search}`;
+  return `${base}/dicomweb${rest}${searchWithoutToken}`;
+}
+
+/** JWT para o Nest: já suportado em jwt.strategy como Bearer ou access_token na query do pedido à API. */
+function resolveJwtForNest(req: NextRequest): string | null {
+  const auth = req.headers.get("authorization");
+  if (auth?.toLowerCase().startsWith("bearer ")) {
+    const t = auth.slice(7).trim();
+    if (t.length > 0) return t;
+  }
+  const fromUrl =
+    req.nextUrl.searchParams.get("access_token") ??
+    req.nextUrl.searchParams.get("token");
+  if (fromUrl) return fromUrl;
+
+  const ref = req.headers.get("referer");
+  if (!ref) return null;
+  try {
+    const refUrl = new URL(ref);
+    if (refUrl.origin !== req.nextUrl.origin) return null;
+    return (
+      refUrl.searchParams.get("access_token") ??
+      refUrl.searchParams.get("token") ??
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function searchParamsWithoutSecrets(req: NextRequest): string {
+  const sp = new URLSearchParams(req.nextUrl.searchParams);
+  sp.delete("access_token");
+  sp.delete("token");
+  const q = sp.toString();
+  return q ? `?${q}` : "";
 }
 
 function forwardRequestHeaders(incoming: Headers): Headers {
@@ -61,9 +102,15 @@ async function proxyDicomWeb(
   req: NextRequest,
   pathSegments: string[] | undefined,
 ): Promise<Response> {
-  const target = buildTargetUrl(pathSegments, req.nextUrl.search);
+  const safeSearch = searchParamsWithoutSecrets(req);
+  const target = buildTargetUrl(pathSegments, safeSearch);
   const method = req.method.toUpperCase();
   const headers = forwardRequestHeaders(req.headers);
+
+  const jwt = resolveJwtForNest(req);
+  if (jwt) {
+    headers.set("authorization", `Bearer ${jwt}`);
+  }
 
   const init: RequestInit & { duplex?: "half" } = {
     method,

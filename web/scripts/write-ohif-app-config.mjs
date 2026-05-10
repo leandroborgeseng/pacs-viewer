@@ -114,7 +114,12 @@ const src = `/* gerado por scripts/write-ohif-app-config.mjs — não editar em 
             auth: function (xhr) {
               try {
                 var params = new URLSearchParams(window.location.search);
-                var token = params.get("access_token") || params.get("token");
+                var token =
+                  params.get("access_token") ||
+                  params.get("token") ||
+                  (typeof localStorage !== "undefined"
+                    ? localStorage.getItem("portal_token")
+                    : null);
                 if (token) {
                   xhr.setRequestHeader("Authorization", "Bearer " + token);
                 }
