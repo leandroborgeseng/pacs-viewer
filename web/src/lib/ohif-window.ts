@@ -1,23 +1,29 @@
 import type { ApiUser } from "./api";
+import { getStoredToken } from "./api";
 
 const WINDOW_NAME = "BlueBeaverViewer";
+
+/** Fallback raro: JWT na query do OHIF (ex.: ambientes sem cookie). Defina `NEXT_PUBLIC_OHIF_TOKEN_IN_QUERY=1` no build Web. */
+export const OHIF_INCLUDE_TOKEN_IN_QUERY =
+  process.env.NEXT_PUBLIC_OHIF_TOKEN_IN_QUERY === "1";
 
 export function getOhifBasePath(): string {
   return (process.env.NEXT_PUBLIC_OHIF_BASE_PATH ?? "/ohif").replace(/\/$/, "") || "/ohif";
 }
 
-/** URL absoluta do viewer DICOM (mesma origem que o portal). */
+/** URL absoluta do viewer DICOM (mesma origem que o portal). Por defeito **sem** JWT na query — proxy usa cookie `bb_dicom_proxy_session` + `localStorage.portal_token`. */
 export function buildOhifViewerAbsoluteUrl(
   studyUID: string,
-  token: string,
   role: ApiUser["role"],
+  tokenOverride?: string | null,
 ): string {
   if (typeof window === "undefined") return "";
   const base = getOhifBasePath();
-  const q = new URLSearchParams({
-    StudyInstanceUIDs: studyUID,
-    access_token: token,
-  });
+  const q = new URLSearchParams({ StudyInstanceUIDs: studyUID });
+  if (OHIF_INCLUDE_TOKEN_IN_QUERY) {
+    const t = tokenOverride ?? getStoredToken();
+    if (t) q.set("access_token", t);
+  }
   const hash = role === "PACIENTE" ? "#patient" : "";
   return `${window.location.origin}${base}/viewer?${q.toString()}${hash}`;
 }
@@ -43,13 +49,13 @@ export function pushSessionToOhifWindow(win: Window, user: ApiUser | null): void
  * Abre o OHIF em nova janela no tamanho do ecrã disponível (leitura clínica).
  * Reutiliza o mesmo nome de janela para evitar dezenas de separadores.
  */
-export function openOhifStudyWindow(
-  studyUID: string,
-  token: string,
-  user: ApiUser,
-): Window | null {
+export function openOhifStudyWindow(studyUID: string, user: ApiUser): Window | null {
   if (typeof window === "undefined") return null;
-  const url = buildOhifViewerAbsoluteUrl(studyUID, token, user.role);
+  const url = buildOhifViewerAbsoluteUrl(
+    studyUID,
+    user.role,
+    OHIF_INCLUDE_TOKEN_IN_QUERY ? getStoredToken() : null,
+  );
   const w = window.screen.availWidth;
   const h = window.screen.availHeight;
   const features = [

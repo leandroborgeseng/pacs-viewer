@@ -40,6 +40,7 @@ type StudyAdmin = {
   id: string;
   studyInstanceUID: string;
   studyDescription: string | null;
+  reportUrl: string | null;
   patient: { fullName: string };
   _count: { permissions: number };
 };
@@ -178,6 +179,7 @@ export default function AdminPage() {
                     <TableRow>
                       <TableHead>Paciente</TableHead>
                       <TableHead>Descrição</TableHead>
+                      <TableHead>Laudo URL</TableHead>
                       <TableHead>UID</TableHead>
                       <TableHead>Permissões</TableHead>
                     </TableRow>
@@ -187,9 +189,21 @@ export default function AdminPage() {
                       <TableRow key={s.id}>
                         <TableCell>{s.patient.fullName}</TableCell>
                         <TableCell>{s.studyDescription ?? "—"}</TableCell>
-                        <TableCell className="max-w-[200px] truncate text-xs">
-                          {s.studyInstanceUID}
+                        <TableCell className="max-w-[180px] truncate text-xs font-mono text-muted-foreground">
+                          {s.reportUrl ? (
+                            <a
+                              href={s.reportUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline-offset-4 hover:underline"
+                            >
+                              {s.reportUrl}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
                         </TableCell>
+                        <TableCell className="max-w-[160px] truncate text-xs">{s.studyInstanceUID}</TableCell>
                         <TableCell>{s._count.permissions}</TableCell>
                       </TableRow>
                     ))}

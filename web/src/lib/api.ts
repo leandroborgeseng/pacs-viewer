@@ -88,6 +88,9 @@ export type StudyRow = {
   studyDescription: string | null;
   studyDate: string | null;
   modality: string | null;
+  seriesCount?: number | null;
+  instanceCount?: number | null;
+  reportUrl?: string | null;
   patient: {
     id: string;
     fullName: string;

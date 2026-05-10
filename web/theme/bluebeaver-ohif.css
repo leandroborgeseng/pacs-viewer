@@ -1,5 +1,5 @@
 /**
- * BlueBeaver — overrides visuais sobre o bundle OHIF v3.
+ * BlueBeaver — overrides visuais sobre o bundle OHIF v3 (`index.html` força `lang="pt-BR"` no inject).
  * Cores da marca: azul #0066B2, verde #2EB100 (acentos / sucesso).
  * Montserrat via ficheiros locais em ./fonts/ (sem Google Fonts — CSP friendly).
  */

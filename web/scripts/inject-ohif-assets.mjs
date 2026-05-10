@@ -39,6 +39,17 @@ for (const [src, dest, label] of [
 let html = fs.readFileSync(indexPath, "utf8");
 let changed = false;
 
+/** Localização do viewer OHIF para leitores de ecrã e tipografia. */
+if (/<html[^>]*>/i.test(html)) {
+  html = html.replace(/<html(\s[^>]*?)>/i, (_, attrs) => {
+    const stripped = attrs
+      .replace(/\s+lang\s*=\s*"[^"]*"/gi, "")
+      .replace(/\s+lang\s*=\s*'[^']*'/gi, "");
+    return `<html lang="pt-BR"${stripped}>`;
+  });
+  changed = true;
+}
+
 if (!html.includes(MARKER_HEAD)) {
   const link = `${MARKER_HEAD}
 <link rel="stylesheet" href="./bluebeaver-ohif.css" crossorigin="anonymous" />`;

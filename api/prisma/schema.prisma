@@ -53,6 +53,8 @@ model Study {
   studyDate        String?
   accessionNumber  String?
   modality         String?
+  /// PDF ou página de resultado clínico (URL https). Ligado ao estudo pela mesma BD.
+  reportUrl        String?  @db.Text @map("report_url")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

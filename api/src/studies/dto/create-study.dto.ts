@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Matches } from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class CreateStudyDto {
   @IsString()
@@ -24,4 +24,9 @@ export class CreateStudyDto {
   @IsOptional()
   @IsString()
   modality?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  reportUrl?: string;
 }

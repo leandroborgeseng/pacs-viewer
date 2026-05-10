@@ -14,7 +14,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { ConnectionPill } from "@/components/branding/connection-pill";
-import { openOhifStudyWindow, buildOhifViewerAbsoluteUrl } from "@/lib/ohif-window";
+import { OHIF_INCLUDE_TOKEN_IN_QUERY, openOhifStudyWindow, buildOhifViewerAbsoluteUrl } from "@/lib/ohif-window";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -38,8 +38,12 @@ function ViewerInner() {
   const canOpen = Boolean(studyUID && token && user);
 
   const absoluteUrl = useMemo(() => {
-    if (!canOpen || !studyUID || !token || !user) return null;
-    return buildOhifViewerAbsoluteUrl(studyUID, token, user.role);
+    if (!canOpen || !studyUID || !user) return null;
+    return buildOhifViewerAbsoluteUrl(
+      studyUID,
+      user.role,
+      OHIF_INCLUDE_TOKEN_IN_QUERY ? token : null,
+    );
   }, [canOpen, studyUID, token, user]);
 
   function handleOpenWindow() {
@@ -47,7 +51,7 @@ function ViewerInner() {
       toast.error("Dados de sessão em falta.");
       return;
     }
-    const win = openOhifStudyWindow(studyUID, token, user);
+    const win = openOhifStudyWindow(studyUID, user);
     if (!win) {
       toast.error(
         "Pop-up bloqueado. Permita janelas para este site ou abra o link manualmente abaixo.",
@@ -63,9 +67,19 @@ function ViewerInner() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Visualizador clínico</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Por defeito o estudo abre numa <strong className="text-foreground/90">janela própria</strong>{" "}
-            no tamanho do ecrã — melhor para leitura diagnóstica. O token continua no URL desta
-            janela; o PACS continua a ser acedido apenas via proxy no backend.
+            Por defeito o estudo abre numa{" "}
+            <strong className="text-foreground/90">janela própria</strong> para leitura a ecrã
+            completo. O tráfego ao PACS passa pelo proxy do portal; a sessão usa cookie httpOnly e o
+            armazenamento local no mesmo domínio.{" "}
+            {OHIF_INCLUDE_TOKEN_IN_QUERY ? (
+              <>
+                O JWT na query do OHIF está <strong>activo</strong> (
+                <code className="text-xs">NEXT_PUBLIC_OHIF_TOKEN_IN_QUERY</code>) para compatibilidade
+                excepcional.
+              </>
+            ) : (
+              <>Por defeito o JWT não é colocado na barra de endereços do viewer.</>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
