@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { BB_DICOM_PROXY_COOKIE } from "@/lib/bb-dicom-session";
 
 /**
  * Proxy DICOMweb do portal → API Nest (`/api/dicomweb`).
  *
- * O OHIF deveria enviar `Authorization: Bearer` (app-config), mas parte dos pedidos
- * (loaders / workers / fetch interno) pode ir **sem** esse header → 401 na API.
- * O JWT também vem na query do viewer (`/ohif/viewer?access_token=…`); o browser
- * envia isso no `Referer` em pedidos same-origin (política por defeito).
+ * Preferência pelo cookie httpOnly **`bb_dicom_proxy_session`** gravado por
+ * `POST /api/bb-session` logo após o login (`syncBbDicomProxyCookie`), para todos
+ * os pedidos a `/bb-api/*` levarem JWT sem depender de Referer nem do header `Authorization` nos pedidos OHIF.
  *
- * Estratégia: obter token de (1) Bearer, (2) query deste URL, (3) query do Referer
- * só se for mesma origem; repor `Authorization` no fetch ao Nest. Remove
- * access_token/token da query repassada para não redundar nos logs upstream.
+ * Fallback: Bearer, access_token/token na URL, Referer mesmo origin.
  */
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -42,8 +40,11 @@ function buildTargetUrl(
   return `${base}/dicomweb${rest}${searchWithoutToken}`;
 }
 
-/** JWT para o Nest: já suportado em jwt.strategy como Bearer ou access_token na query do pedido à API. */
+/** JWT para a Nest (`jwt.strategy`): cookie httpOnly primeiro, depois header/query/Referer. */
 function resolveJwtForNest(req: NextRequest): string | null {
+  const fromCookie = req.cookies.get(BB_DICOM_PROXY_COOKIE)?.value?.trim();
+  if (fromCookie) return fromCookie;
+
   const auth = req.headers.get("authorization");
   if (auth?.toLowerCase().startsWith("bearer ")) {
     const t = auth.slice(7).trim();
@@ -82,6 +83,7 @@ function forwardRequestHeaders(incoming: Headers): Headers {
   incoming.forEach((value, key) => {
     const k = key.toLowerCase();
     if (k === "host") return;
+    if (k === "cookie") return;
     if (HOP_BY_HOP.has(k)) return;
     out.append(key, value);
   });

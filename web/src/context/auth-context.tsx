@@ -10,6 +10,10 @@ import {
 } from "react";
 import type { ApiUser } from "@/lib/api";
 import { API_URL, apiFetch, setStoredToken, getStoredToken } from "@/lib/api";
+import {
+  clearBbDicomProxyCookie,
+  syncBbDicomProxyCookie,
+} from "@/lib/bb-dicom-session-client";
 
 type AuthState = {
   token: string | null;
@@ -45,7 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(t);
     void (async () => {
       try {
-        if (t) await refreshMe(t);
+        if (t) {
+          await syncBbDicomProxyCookie(t);
+          await refreshMe(t);
+        }
       } finally {
         setLoading(false);
       }
@@ -58,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window === "undefined" || ev.origin !== window.location.origin) return;
       const d = ev.data as { source?: string; type?: string } | null;
       if (!d || d.source !== "bb-viewer" || d.type !== "BB_LOGOUT") return;
+      void clearBbDicomProxyCookie();
       setStoredToken(null);
       setToken(null);
       setUser(null);
@@ -104,9 +112,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStoredToken(data.access_token);
     setToken(data.access_token);
     setUser(data.user);
+    await syncBbDicomProxyCookie(data.access_token);
   }, []);
 
   const logout = useCallback(() => {
+    void clearBbDicomProxyCookie();
     setStoredToken(null);
     setToken(null);
     setUser(null);
