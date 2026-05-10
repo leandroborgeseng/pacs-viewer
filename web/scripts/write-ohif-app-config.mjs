@@ -3,8 +3,8 @@
  * Gera public/ohif/app-config.js após copiar o build estático do OHIF.
  *
  * O data source DICOMweb usa **mesma origem** que o portal: `origin + /bb-api/dicomweb`.
- * O Next reescreve isso para `NEXT_PUBLIC_API_URL/dicomweb` (ver next.config.ts),
- * evitando CORS/CSP no browser e URLs da API incorrectas no bundle estático.
+ * O Route Handler `src/app/bb-api/dicomweb/[[...path]]/route.ts` faz proxy para `NEXT_PUBLIC_API_URL/dicomweb`
+ * preservando Authorization (rewrite em next.config omitia Bearer e causava 401).
  */
 import fs from "fs";
 import path from "path";
