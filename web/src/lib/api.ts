@@ -92,16 +92,6 @@ export type StudiesMeSummary = {
   modalityTop: { modality: string; count: number }[];
 };
 
-/** Resposta de `DELETE /studies/:id/report` (ADMIN). */
-export type AdminDeleteStudyLaudoResponse = {
-  hadReportUrl: boolean;
-  sealsRemoved: number;
-  orthancInstancesAttempted: number;
-  orthancInstancesRemoved: number;
-  orthancInstancesFailed: number;
-};
-
-/** `GET /audit/logs` (ADMIN) — mutações REST registadas pelo servidor. */
 export type AuditLogItem = {
   id: string;
   createdAt: string;

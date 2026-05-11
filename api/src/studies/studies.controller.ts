@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Patch,
@@ -50,13 +49,5 @@ export class StudiesController {
   @Roles(Role.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateStudyDto) {
     return this.studies.update(id, dto);
-  }
-
-  /** ADMIN: URL do portal + registos institucionais de laudo PDF; tentativa de remoção no Orthanc quando conhecido. */
-  @Delete(':id/report')
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  deleteReportLaudo(@Param('id') id: string) {
-    return this.studies.adminDeleteStudyLaudo(id);
   }
 }

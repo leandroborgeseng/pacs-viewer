@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -243,8 +244,14 @@ export class StudiesService {
       where: { id: dto.patientId },
     });
     if (!patient) throw new NotFoundException('Paciente não encontrado');
+    const { reportUrl, ...rest } = dto;
     const row = await this.prisma.study.create({
-      data: dto,
+      data: {
+        ...rest,
+        ...(reportUrl !== undefined
+          ? { reportUrl: this.rejectEmptyReportUrl(reportUrl) }
+          : {}),
+      },
       include: { patient: true },
     });
     this.invalidateStudyCatalogCache();
@@ -254,10 +261,9 @@ export class StudiesService {
 
   async update(id: string, dto: UpdateStudyDto) {
     await this.ensureStudy(id);
-    let data = { ...(dto as object) } as Prisma.StudyUpdateInput & { reportUrl?: string | null };
+    let data = { ...(dto as object) } as Prisma.StudyUpdateInput & { reportUrl?: string };
     if (dto.reportUrl !== undefined) {
-      const trimmed = dto.reportUrl?.trim() ?? '';
-      data = { ...data, reportUrl: trimmed.length > 0 ? trimmed : null };
+      data = { ...data, reportUrl: this.rejectEmptyReportUrl(dto.reportUrl) };
     }
     const row = await this.prisma.study.update({
       where: { id },
@@ -271,54 +277,15 @@ export class StudiesService {
     return row;
   }
 
-  /**
-   * ADMIN apenas (controlador): remove URL na BD, selos institucionais do estudo e,
-   * quando há ID Orthanc registado no selo, tenta apagar essa instância no PACS.
-   */
-  async adminDeleteStudyLaudo(studyUuid: string) {
-    const study = await this.ensureStudy(studyUuid);
-    const hadUrl = !!(study.reportUrl?.trim()?.length ?? 0);
-    const uid = study.studyInstanceUID.trim();
-
-    const seals = uid.length
-      ? await this.prisma.reportLaudoSeal.findMany({
-          where: { studyInstanceUid: uid },
-          select: { orthancInstanceId: true },
-        })
-      : [];
-
-    let orthancRemoved = 0;
-    let orthancFailed = 0;
-    const orthancIds = [
-      ...new Set(
-        seals
-          .map((s) => s.orthancInstanceId?.trim())
-          .filter((x): x is string => !!x?.length),
-      ),
-    ];
-    for (const oid of orthancIds) {
-      const ok = await this.orthancRest.tryDeleteOrthancInstance(oid);
-      if (ok) orthancRemoved += 1;
-      else orthancFailed += 1;
+  /** Não permite apagar o laudo pela API do portal; só alteração para URL não vazio. */
+  private rejectEmptyReportUrl(raw: string | null | undefined): string {
+    const t = typeof raw === 'string' ? raw.trim() : '';
+    if (!t.length) {
+      throw new BadRequestException(
+        'A remoção do URL do laudo não está disponível neste portal. Faça a gestão no PACS ou indique um novo URL.',
+      );
     }
-
-    const delSeals = uid.length
-      ? await this.prisma.reportLaudoSeal.deleteMany({ where: { studyInstanceUid: uid } })
-      : { count: 0 };
-
-    await this.prisma.study.update({
-      where: { id: studyUuid },
-      data: { reportUrl: null },
-    });
-    this.invalidateStudyCatalogCache();
-
-    return {
-      hadReportUrl: hadUrl,
-      sealsRemoved: delSeals.count,
-      orthancInstancesAttempted: orthancIds.length,
-      orthancInstancesRemoved: orthancRemoved,
-      orthancInstancesFailed: orthancFailed,
-    };
+    return t;
   }
 
   private async ensureStudy(id: string) {
