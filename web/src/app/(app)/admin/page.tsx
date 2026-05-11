@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PencilIcon, Loader2, Globe, ScrollText } from "lucide-react";
 import {
@@ -130,35 +130,87 @@ export default function AdminPage() {
     to: "",
   });
 
+  /** Carrega cada separador sob demanda — evita bloquear o browser com /studies ou /permissions muito grandes. */
   useEffect(() => {
+    if (adminTab !== "users" || users !== null) return;
+    let cancelled = false;
     void (async () => {
       try {
-        const [u, p, s, perm] = await Promise.all([
-          apiFetch<UserRow[]>("/users"),
-          apiFetch<PatientRow[]>("/patients"),
-          apiFetch<StudyAdmin[]>("/studies"),
-          apiFetch<PermissionRow[]>("/permissions"),
-        ]);
-        setUsers(u);
-        setPatients(p);
-        setStudies(s);
-        setPerms(perm);
+        const u = await apiFetch<UserRow[]>("/users");
+        if (!cancelled) setUsers(u);
       } catch {
-        toast.error("Falha ao carregar dados administrativos");
+        if (!cancelled) toast.error("Não foi possível carregar utilizadores");
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [adminTab, users]);
 
   useEffect(() => {
+    if (adminTab !== "patients" || patients !== null) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const p = await apiFetch<PatientRow[]>("/patients");
+        if (!cancelled) setPatients(p);
+      } catch {
+        if (!cancelled) toast.error("Não foi possível carregar pacientes");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminTab, patients]);
+
+  useEffect(() => {
+    if (adminTab !== "studies" || studies !== null) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const s = await apiFetch<StudyAdmin[]>("/studies");
+        if (!cancelled) startTransition(() => setStudies(s));
+      } catch {
+        if (!cancelled) toast.error("Não foi possível carregar estudos");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminTab, studies]);
+
+  useEffect(() => {
+    if (adminTab !== "perms" || perms !== null) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const perm = await apiFetch<PermissionRow[]>("/permissions");
+        if (!cancelled) setPerms(perm);
+      } catch {
+        if (!cancelled) toast.error("Não foi possível carregar permissões");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminTab, perms]);
+
+  useEffect(() => {
+    if (adminTab !== "integration" || pacs !== null) return;
+    let cancelled = false;
     void (async () => {
       try {
         const data = await apiFetch<IntegrationPacsAdminDto>("/integration/pacs");
-        setPacs(data);
+        if (!cancelled) setPacs(data);
       } catch (err) {
-        toast.error(formatApiError(err, "Não foi possível carregar a integração com o PACS"));
+        if (!cancelled)
+          toast.error(formatApiError(err, "Não foi possível carregar a integração com o PACS"));
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [adminTab, pacs]);
 
   useEffect(() => {
     if (adminTab !== "audit") return;

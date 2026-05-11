@@ -81,6 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
             {user?.role === "ADMIN" && (
               <Link
+                prefetch={false}
                 href="/admin"
                 className={cn(
                   buttonVariants({
