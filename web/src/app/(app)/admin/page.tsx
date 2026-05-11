@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { PencilIcon, Loader2, Globe } from "lucide-react";
-import { apiFetch, formatApiError, type IntegrationPacsAdminDto, type IntegrationPacsTestResponse } from "@/lib/api";
+import { PencilIcon, Loader2, Globe, Trash2 } from "lucide-react";
+import { apiFetch, formatApiError, type AdminDeleteStudyLaudoResponse, type IntegrationPacsAdminDto, type IntegrationPacsTestResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -90,6 +90,7 @@ export default function AdminPage() {
   const [perms, setPerms] = useState<PermissionRow[] | null>(null);
   const [reportEditor, setReportEditor] = useState<ReportEditorState | null>(null);
   const [savingReportUrl, setSavingReportUrl] = useState(false);
+  const [deletingLaudoStudyId, setDeletingLaudoStudyId] = useState<string | null>(null);
   const [pacs, setPacs] = useState<IntegrationPacsAdminDto | null>(null);
   const [pacsDraft, setPacsDraft] = useState<PacsFormDraft>({
     tls: false,
@@ -226,6 +227,51 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteStudyLaudo(studyId: string) {
+    const msg =
+      "Eliminar o laudo registado neste estudo?\n\n" +
+      "• Remove o URL na base do portal (worklist «Ver resultado»).\n" +
+      "• Apaga os registos de verificação institucionais (selos) ligados ao Study UID.\n" +
+      "• Tenta remover no Orthanc as instâncias DICOM dos laudos PDF criados por este portal, quando o ID foi guardado.\n\n" +
+      "Não apaga imagens clínicas nem documentos carregados por outros meios.";
+    if (!window.confirm(msg)) return;
+
+    setDeletingLaudoStudyId(studyId);
+    try {
+      const r = await apiFetch<AdminDeleteStudyLaudoResponse>(
+        `/studies/${studyId}/report`,
+        { method: "DELETE" },
+      );
+      setStudies((prev) =>
+        prev?.map((row) =>
+          row.id === studyId ? { ...row, reportUrl: null } : row,
+        ) ?? null,
+      );
+      setReportEditor((ed) => (ed?.id === studyId ? null : ed));
+
+      const parts: string[] = [];
+      if (r.hadReportUrl) parts.push("URL removida");
+      if (r.sealsRemoved > 0)
+        parts.push(`${r.sealsRemoved} selo(s) na base`);
+      if (r.orthancInstancesAttempted > 0) {
+        parts.push(
+          `Orthanc ${r.orthancInstancesRemoved}/${r.orthancInstancesAttempted} instância(s)`,
+        );
+        if (r.orthancInstancesFailed > 0)
+          parts.push(`${r.orthancInstancesFailed} falha(s) no PACS — ver logs da API`);
+      }
+      if (parts.length === 0) {
+        toast.success("Este estudo já não tinha laudo registado pelo portal.");
+      } else {
+        toast.success(parts.join(" · "));
+      }
+    } catch (err) {
+      toast.error(formatApiError(err, "Não foi possível eliminar o laudo."));
+    } finally {
+      setDeletingLaudoStudyId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -327,7 +373,10 @@ export default function AdminPage() {
               <CardDescription>
                 O <strong className="text-foreground/90">StudyInstanceUID</strong> deve
                 coincidir com o PACS (Orthanc). O laudo aparece na worklist só depois deste
-                URL estar guardado aqui por estudo.
+                URL estar guardado aqui por estudo. Um administrador pode{" "}
+                <strong className="text-foreground/90">eliminar</strong> o laudo (URL +
+                registos institucionais e tentativa de remover o PDF criado pela API no
+                Orthanc).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -372,23 +421,41 @@ export default function AdminPage() {
                         </TableCell>
                         <TableCell className="text-right">{s._count.permissions}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={() =>
-                              setReportEditor({
-                                id: s.id,
-                                studyInstanceUID: s.studyInstanceUID,
-                                patientName: s.patient.fullName,
-                                draftUrl: s.reportUrl ?? "",
-                              })
-                            }
-                          >
-                            <PencilIcon className="size-3.5" aria-hidden />
-                            Laudo
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              disabled={deletingLaudoStudyId !== null}
+                              onClick={() =>
+                                setReportEditor({
+                                  id: s.id,
+                                  studyInstanceUID: s.studyInstanceUID,
+                                  patientName: s.patient.fullName,
+                                  draftUrl: s.reportUrl ?? "",
+                                })
+                              }
+                            >
+                              <PencilIcon className="size-3.5" aria-hidden />
+                              Laudo
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              disabled={deletingLaudoStudyId !== null}
+                              aria-label={`Eliminar laudo do estudo ${s.patient.fullName}`}
+                              onClick={() => void deleteStudyLaudo(s.id)}
+                            >
+                              {deletingLaudoStudyId === s.id ? (
+                                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                              ) : (
+                                <Trash2 className="size-3.5" aria-hidden />
+                              )}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -723,7 +790,8 @@ export default function AdminPage() {
             <SheetDescription>
               Estudo ligado ao paciente <strong>{reportEditor?.patientName}</strong>. Este
               endereço abre ao utilizador autorizado na worklist («Ver resultado»). Use
-              HTTPS sempre que possível.
+              HTTPS sempre que possível. O botão vermelho remove o URL, os selos de
+              verificação e tenta apagar no Orthanc o PDF criado por este portal.
             </SheetDescription>
           </SheetHeader>
           {reportEditor && (
@@ -756,7 +824,7 @@ export default function AdminPage() {
               <SheetFooter className="mt-4 flex-row flex-wrap gap-2 sm:justify-start">
                 <Button
                   type="button"
-                  disabled={savingReportUrl}
+                  disabled={savingReportUrl || deletingLaudoStudyId !== null}
                   onClick={() => void saveStudyReportUrl()}
                   className="gap-2"
                 >
@@ -768,7 +836,7 @@ export default function AdminPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={savingReportUrl}
+                  disabled={savingReportUrl || deletingLaudoStudyId !== null}
                   onClick={() =>
                     setReportEditor((prev) =>
                       prev ? { ...prev, draftUrl: "" } : prev,
@@ -779,8 +847,22 @@ export default function AdminPage() {
                 </Button>
                 <Button
                   type="button"
+                  variant="destructive"
+                  disabled={savingReportUrl || deletingLaudoStudyId !== null}
+                  className="gap-2"
+                  onClick={() => void deleteStudyLaudo(reportEditor.id)}
+                >
+                  {deletingLaudoStudyId === reportEditor.id ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Trash2 className="size-4" aria-hidden />
+                  )}
+                  Eliminar laudo
+                </Button>
+                <Button
+                  type="button"
                   variant="outline"
-                  disabled={savingReportUrl}
+                  disabled={savingReportUrl || deletingLaudoStudyId !== null}
                   onClick={() => setReportEditor(null)}
                 >
                   Cancelar

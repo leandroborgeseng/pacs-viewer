@@ -10,6 +10,11 @@ export type StudyCatalogRow = {
   instanceCount: number | null;
   /** URL opcional registada na BD (laudo PDF/página externa autenticada). */
   reportUrl: string | null;
+  /**
+   * Indício no PACS: série DOC/OT (QIDO `/series`) ou ModalitiesInStudy agregado configurável.
+   * O documento visualiza‑se tipicamente no OHIF dentro do mesmo estudo.
+   */
+  hasPacsDocumentLaudo: boolean;
   patient: {
     id: string;
     fullName: string;
@@ -21,6 +26,7 @@ export type StudyCatalogRow = {
 export type StudyCatalogSummary = {
   studyCount: number;
   studiesWithReportUrl: number;
+  studiesWithPacsDocumentLaudo: number;
   /** Soma de séries quando todos os estudos trazem a tag DICOM no QIDO; senão null. */
   totalSeries: number | null;
   /** Soma de instâncias quando todos trazem a tag; senão null. */

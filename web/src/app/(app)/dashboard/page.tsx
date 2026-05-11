@@ -91,7 +91,7 @@ export default function DashboardPage() {
             nos metados de todos os estudos visíveis.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <DashboardStatCard
             title="Estudos"
             helper="Registos de estudo com acesso ao visualizador"
@@ -108,6 +108,18 @@ export default function DashboardPage() {
                 ? null
                 : summary
                   ? formatCount(summary.studiesWithReportUrl)
+                  : "—"
+            }
+            pulse={summaryLoading}
+          />
+          <DashboardStatCard
+            title="Doc. no PACS"
+            helper="Estudos com série DOC/OT ou modalidade equivalente nos metados (deteção DICOMweb)"
+            value={
+              summaryLoading
+                ? null
+                : summary
+                  ? formatCount(summary.studiesWithPacsDocumentLaudo)
                   : "—"
             }
             pulse={summaryLoading}

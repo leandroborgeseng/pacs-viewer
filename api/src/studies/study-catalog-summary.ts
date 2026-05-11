@@ -6,6 +6,10 @@ export function buildStudyCatalogSummary(rows: StudyCatalogRow[]): StudyCatalogS
     (n, r) => n + (((r.reportUrl ?? '').trim().length > 0) ? 1 : 0),
     0,
   );
+  const studiesWithPacsDocumentLaudo = rows.reduce(
+    (n, r) => n + (r.hasPacsDocumentLaudo ? 1 : 0),
+    0,
+  );
 
   let totalSeries: number | null = null;
   if (studyCount > 0 && rows.every((r) => r.seriesCount != null)) {
@@ -30,6 +34,7 @@ export function buildStudyCatalogSummary(rows: StudyCatalogRow[]): StudyCatalogS
   return {
     studyCount,
     studiesWithReportUrl,
+    studiesWithPacsDocumentLaudo,
     totalSeries,
     totalInstances,
     modalityTop,

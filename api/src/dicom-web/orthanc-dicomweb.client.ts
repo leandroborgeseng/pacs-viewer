@@ -121,4 +121,61 @@ export class OrthancDicomWebClient {
       );
     }
   }
+
+  /**
+   * Estudos com pelo menos uma série nas modalidades dadas (ex. DOC, OT — típ. laudo PDF encapsulado).
+   * QIDO `/series?00080060=…`; falhas por modalidade ignoram-se (resultado parcial).
+   */
+  async fetchStudyUidsForSeriesModalities(
+    modalities: readonly string[],
+  ): Promise<Set<string>> {
+    const out = new Set<string>();
+    const base = this.baseUrl().replace(/\/+$/, '');
+    for (const raw of modalities) {
+      const mod = raw.trim().toUpperCase();
+      if (!mod) continue;
+      const url = `${base}/series?00080060=${encodeURIComponent(mod)}`;
+      try {
+        const response = await firstValueFrom(
+          this.http.get<unknown>(url, {
+            headers: this.upstreamHeaders(),
+            validateStatus: () => true,
+            timeout: 60_000,
+          }),
+        );
+        if (response.status !== 200 || !Array.isArray(response.data)) {
+          this.logger.warn(
+            JSON.stringify({
+              event: 'orthanc.qido_series_modal',
+              url,
+              modality: mod,
+              status: response.status,
+              hint: 'resposta inesperada; modalidade ignorada',
+            }),
+          );
+          continue;
+        }
+        for (const row of response.data) {
+          const uid = readDicomJsonStudyInstanceUid(row);
+          if (uid) out.add(uid);
+        }
+      } catch (e) {
+        this.logger.warn(
+          JSON.stringify({
+            event: 'orthanc.qido_series_modal_error',
+            modality: mod,
+            message: e instanceof Error ? e.message : String(e),
+          }),
+        );
+      }
+    }
+    return out;
+  }
+}
+
+function readDicomJsonStudyInstanceUid(item: unknown): string | null {
+  if (!item || typeof item !== 'object') return null;
+  const t = (item as Record<string, { Value?: unknown[] } | undefined>)['0020000D'];
+  const v = t?.Value?.[0];
+  return typeof v === 'string' && v.length > 0 ? v : null;
 }

@@ -212,4 +212,41 @@ export class OrthancRestClient {
       throw e;
     }
   }
+
+  /**
+   * Elimina uma instância no Orthanc (ex.: PDF DOC gravado pela API).
+   * Devolve false se o PACS respondeu erro (ex.: ID inexistente); não lança.
+   */
+  async tryDeleteOrthancInstance(orthancInstanceId: string): Promise<boolean> {
+    const id = orthancInstanceId.trim();
+    if (!id.length) return false;
+    const root = this.restRoot();
+    const url = `${root}/instances/${encodeURIComponent(id)}`;
+    try {
+      const resp = await firstValueFrom(
+        this.http.delete(url, {
+          headers: this.upstreamHeaders(),
+          validateStatus: () => true,
+        }),
+      );
+      if (resp.status === 200) return true;
+      this.logger.warn(
+        JSON.stringify({
+          event: 'orthanc.delete_instance',
+          id,
+          status: resp.status,
+        }),
+      );
+      return false;
+    } catch (e) {
+      this.logger.warn(
+        JSON.stringify({
+          event: 'orthanc.delete_instance_error',
+          id,
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      );
+      return false;
+    }
+  }
 }

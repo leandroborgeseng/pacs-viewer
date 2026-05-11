@@ -12,6 +12,7 @@ function row(partial: Partial<StudyCatalogRow> & Pick<StudyCatalogRow, 'studyIns
     seriesCount: partial.seriesCount ?? null,
     instanceCount: partial.instanceCount ?? null,
     reportUrl: partial.reportUrl ?? null,
+    hasPacsDocumentLaudo: partial.hasPacsDocumentLaudo ?? false,
     patient: partial.patient ?? {
       id: 'p:test',
       fullName: 'Test',
@@ -30,6 +31,7 @@ describe('buildStudyCatalogSummary', () => {
     expect(s.totalSeries).toBe(5);
     expect(s.totalInstances).toBe(30);
     expect(s.studiesWithReportUrl).toBe(0);
+    expect(s.studiesWithPacsDocumentLaudo).toBe(0);
     expect(s.modalityTop.map((x) => x.modality).sort()).toEqual(['CT', 'MR']);
   });
 
@@ -54,5 +56,14 @@ describe('buildStudyCatalogSummary', () => {
       row({ studyInstanceUID: '3', reportUrl: null }),
     ]);
     expect(s.studiesWithReportUrl).toBe(1);
+  });
+
+  it('conta estudos com documento/laudo indicado pelo PACS (DOC/OT etc.)', () => {
+    const s = buildStudyCatalogSummary([
+      row({ studyInstanceUID: '1', hasPacsDocumentLaudo: true }),
+      row({ studyInstanceUID: '2', hasPacsDocumentLaudo: false }),
+      row({ studyInstanceUID: '3', hasPacsDocumentLaudo: true }),
+    ]);
+    expect(s.studiesWithPacsDocumentLaudo).toBe(2);
   });
 });

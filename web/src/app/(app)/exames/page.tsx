@@ -260,8 +260,9 @@ export default function ExamesPage() {
           Worklist institucional alinhada ao PACS · leitura de imagens no OHIF{" "}
           <strong className="font-medium text-foreground/90">em janela dedicada</strong>.
           Dica: use o menu <strong className="text-foreground/85">⋯</strong> em cada linha para
-          copiar UID, abrir laudo registado na base do portal ou, como médico ou administrador,
-          criar um <strong className="text-foreground/85">laudo PDF</strong> que é enviado ao PACS.
+          copiar UID, abrir laudo registado na base do portal, abrir documento encapsulado no PACS
+          (série DOC/OT detetada via DICOMweb) ou, como médico ou administrador, criar um{" "}
+          <strong className="text-foreground/85">laudo PDF</strong> que é enviado ao PACS.
         </p>
       </div>
 
@@ -521,26 +522,40 @@ export default function ExamesPage() {
                             {formatSeriesInstanceLabel(s.seriesCount, s.instanceCount)}
                           </TableCell>
                           <TableCell>
-                            {s.reportUrl ? (
-                              <Button
-                                type="button"
-                                variant="link"
-                                className="h-auto p-0 text-sm"
-                                onClick={() =>
-                                  setLaudo({
-                                    open: true,
-                                    url: s.reportUrl ?? null,
-                                    title:
-                                      `Laudo · ${s.patient.fullName}`.slice(0, 80),
-                                  })
-                                }
-                              >
-                                <FileText className="mr-1 inline size-3.5 opacity-90" aria-hidden />
-                                Ver resultado
-                              </Button>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
+                            <div className="flex flex-col items-start gap-1.5">
+                              {s.reportUrl ? (
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  className="h-auto p-0 text-sm"
+                                  onClick={() =>
+                                    setLaudo({
+                                      open: true,
+                                      url: s.reportUrl ?? null,
+                                      title:
+                                        `Laudo · ${s.patient.fullName}`.slice(0, 80),
+                                    })
+                                  }
+                                >
+                                  <FileText className="mr-1 inline size-3.5 opacity-90" aria-hidden />
+                                  Ver resultado
+                                </Button>
+                              ) : null}
+                              {s.hasPacsDocumentLaudo ? (
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  className="h-auto p-0 text-sm"
+                                  onClick={() => handleOpenStudy(s.studyInstanceUID)}
+                                >
+                                  <FileText className="mr-1 inline size-3.5 opacity-90" aria-hidden />
+                                  Documento no PACS (OHIF)
+                                </Button>
+                              ) : null}
+                              {!s.reportUrl && !s.hasPacsDocumentLaudo ? (
+                                <span className="text-muted-foreground">—</span>
+                              ) : null}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
@@ -568,6 +583,15 @@ export default function ExamesPage() {
                                   <Copy className="size-3.5" aria-hidden />
                                   Copiar Study UID
                                 </DropdownMenuItem>
+                                {s.hasPacsDocumentLaudo ? (
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenStudy(s.studyInstanceUID)}
+                                    className="gap-2"
+                                  >
+                                    <FileText className="size-3.5" aria-hidden />
+                                    Laudo/documento no PACS (OHIF)
+                                  </DropdownMenuItem>
+                                ) : null}
                                 {canWriteLaudo ? (
                                   <>
                                     <DropdownMenuSeparator />

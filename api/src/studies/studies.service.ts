@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { DicomAccessService } from '../dicom-web/dicom-access.service';
 import { OrthancDicomWebClient } from '../dicom-web/orthanc-dicomweb.client';
+import { OrthancRestClient } from '../dicom-web/orthanc-rest.client';
 import { CreateStudyDto } from './dto/create-study.dto';
 import { UpdateStudyDto } from './dto/update-study.dto';
 import { RequestUser } from '../common/decorators/current-user.decorator';
@@ -28,6 +29,9 @@ const TAG_NUM_SERIES = '00201206';
 /** Number of Study Related Instances (IS) — contagem Orthanc quando disponível. */
 const TAG_NUM_INSTANCES = '00201208';
 
+/** Modalidades de série que indicam documento / laudo encapsulado no PACS. */
+const DEFAULT_DOC_SERIES_MODALITIES = ['DOC', 'OT'] as const;
+
 @Injectable()
 export class StudiesService {
   private readonly catalogCacheTtlMs: number;
@@ -42,7 +46,8 @@ export class StudiesService {
     private prisma: PrismaService,
     private access: DicomAccessService,
     private orthanc: OrthancDicomWebClient,
-    configService: ConfigService,
+    private orthancRest: OrthancRestClient,
+    private readonly configService: ConfigService,
   ) {
     const raw = configService.get<string | undefined>('STUDIES_CATALOG_CACHE_MS');
     const n = parseInt(String(raw ?? '45000'), 10);
@@ -88,9 +93,15 @@ export class StudiesService {
   }
 
   private async computeFreshListForCurrentUser(user: RequestUser): Promise<StudyCatalogRow[]> {
-    const raw = await this.orthanc.fetchStudiesDicomJson();
+    const docModalities = this.parseDocSeriesModalitiesFromEnv();
+    const [raw, docStudyUids] = await Promise.all([
+      this.orthanc.fetchStudiesDicomJson(),
+      this.orthanc.fetchStudyUidsForSeriesModalities(docModalities),
+    ]);
     const rows = raw
-      .map((item) => this.mapDicomStudyToRow(item))
+      .map((item) =>
+        this.mapDicomStudyToRow(item, docStudyUids, docModalities),
+      )
       .filter((r): r is NonNullable<typeof r> => r != null);
 
     let scoped: StudyCatalogRow[];
@@ -170,6 +181,56 @@ export class StudiesService {
     return row;
   }
 
+  /**
+   * ADMIN apenas (controlador): remove URL na BD, selos institucionais do estudo e,
+   * quando há ID Orthanc registado no selo, tenta apagar essa instância no PACS.
+   */
+  async adminDeleteStudyLaudo(studyUuid: string) {
+    const study = await this.ensureStudy(studyUuid);
+    const hadUrl = !!(study.reportUrl?.trim()?.length ?? 0);
+    const uid = study.studyInstanceUID.trim();
+
+    const seals = uid.length
+      ? await this.prisma.reportLaudoSeal.findMany({
+          where: { studyInstanceUid: uid },
+          select: { orthancInstanceId: true },
+        })
+      : [];
+
+    let orthancRemoved = 0;
+    let orthancFailed = 0;
+    const orthancIds = [
+      ...new Set(
+        seals
+          .map((s) => s.orthancInstanceId?.trim())
+          .filter((x): x is string => !!x?.length),
+      ),
+    ];
+    for (const oid of orthancIds) {
+      const ok = await this.orthancRest.tryDeleteOrthancInstance(oid);
+      if (ok) orthancRemoved += 1;
+      else orthancFailed += 1;
+    }
+
+    const delSeals = uid.length
+      ? await this.prisma.reportLaudoSeal.deleteMany({ where: { studyInstanceUid: uid } })
+      : { count: 0 };
+
+    await this.prisma.study.update({
+      where: { id: studyUuid },
+      data: { reportUrl: null },
+    });
+    this.invalidateStudyCatalogCache();
+
+    return {
+      hadReportUrl: hadUrl,
+      sealsRemoved: delSeals.count,
+      orthancInstancesAttempted: orthancIds.length,
+      orthancInstancesRemoved: orthancRemoved,
+      orthancInstancesFailed: orthancFailed,
+    };
+  }
+
   private async ensureStudy(id: string) {
     const s = await this.prisma.study.findUnique({ where: { id } });
     if (!s) throw new NotFoundException('Estudo não encontrado');
@@ -187,7 +248,41 @@ export class StudiesService {
     });
   }
 
-  private mapDicomStudyToRow(item: unknown): StudyCatalogRow | null {
+  /** Modalidades de série (Orthanc Modality da série, p.ex. DOC) usadas como indício de documento no PACS. */
+  private parseDocSeriesModalitiesFromEnv(): string[] {
+    const raw = this.configService.get<string | undefined>('STUDIES_PACS_DOC_MODALITIES');
+    const parsed = raw
+      ? raw
+          .split(',')
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean)
+      : [...DEFAULT_DOC_SERIES_MODALITIES];
+    return parsed.length > 0 ? parsed : [...DEFAULT_DOC_SERIES_MODALITIES];
+  }
+
+  /**
+   * Alguns PACS preenchem ModalitiesInStudy (00080061) incluindo DOC quando há laudo encapsulado.
+   */
+  private modalitiesInStudyMatchesDocQuery(
+    modalitiesInStudy: string | null,
+    docSeriesModalities: readonly string[],
+  ): boolean {
+    if (!modalitiesInStudy?.trim()) return false;
+    const want = new Set(
+      docSeriesModalities.map((m) => m.trim().toUpperCase()).filter(Boolean),
+    );
+    if (want.size === 0) return false;
+    for (const part of modalitiesInStudy.split('\\')) {
+      if (want.has(part.trim().toUpperCase())) return true;
+    }
+    return false;
+  }
+
+  private mapDicomStudyToRow(
+    item: unknown,
+    docStudyUids: Set<string>,
+    docSeriesModalities: readonly string[],
+  ): StudyCatalogRow | null {
     const uid = this.readUiString(item, TAG_STUDY_UID);
     if (!uid) return null;
 
@@ -196,15 +291,24 @@ export class StudiesService {
     const patientId =
       mrn.length > 0 ? `pacs:${mrn}` : `pacs:study:${uid.slice(0, 24)}`;
 
+    const modalityJoined = this.joinModality(item, TAG_MODALITIES);
+    const hasPacsDocumentLaudo =
+      docStudyUids.has(uid) ||
+      this.modalitiesInStudyMatchesDocQuery(
+        modalityJoined,
+        docSeriesModalities,
+      );
+
     return {
       id: uid,
       studyInstanceUID: uid,
       studyDescription: this.readFirstString(item, TAG_STUDY_DESC),
       studyDate: this.readFirstString(item, TAG_STUDY_DATE),
-      modality: this.joinModality(item, TAG_MODALITIES),
+      modality: modalityJoined,
       seriesCount: this.readFirstNonNegativeInt(item, TAG_NUM_SERIES),
       instanceCount: this.readFirstNonNegativeInt(item, TAG_NUM_INSTANCES),
       reportUrl: null,
+      hasPacsDocumentLaudo,
       patient: {
         id: patientId,
         fullName: fullName,

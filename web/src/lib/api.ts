@@ -86,9 +86,19 @@ export function formatApiError(err: unknown, fallback: string): string {
 export type StudiesMeSummary = {
   studyCount: number;
   studiesWithReportUrl: number;
+  studiesWithPacsDocumentLaudo: number;
   totalSeries: number | null;
   totalInstances: number | null;
   modalityTop: { modality: string; count: number }[];
+};
+
+/** Resposta de `DELETE /studies/:id/report` (ADMIN). */
+export type AdminDeleteStudyLaudoResponse = {
+  hadReportUrl: boolean;
+  sealsRemoved: number;
+  orthancInstancesAttempted: number;
+  orthancInstancesRemoved: number;
+  orthancInstancesFailed: number;
 };
 
 export type PdfLaudoIngestResponse = {
@@ -117,6 +127,8 @@ export type StudyRow = {
   seriesCount?: number | null;
   instanceCount?: number | null;
   reportUrl?: string | null;
+  /** Indício de documento encapsulado no PACS (série DOC/OT ou metadados de estudo). */
+  hasPacsDocumentLaudo?: boolean;
   patient: {
     id: string;
     fullName: string;
