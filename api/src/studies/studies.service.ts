@@ -10,6 +10,7 @@ import { CreateStudyDto } from './dto/create-study.dto';
 import { UpdateStudyDto } from './dto/update-study.dto';
 import { RequestUser } from '../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 const TAG_STUDY_UID = '0020000D';
 const TAG_STUDY_DATE = '00080020';
@@ -117,10 +118,18 @@ export class StudiesService {
 
   async update(id: string, dto: UpdateStudyDto) {
     await this.ensureStudy(id);
+    let data = { ...(dto as object) } as Prisma.StudyUpdateInput & { reportUrl?: string | null };
+    if (dto.reportUrl !== undefined) {
+      const trimmed = dto.reportUrl?.trim() ?? '';
+      data = { ...data, reportUrl: trimmed.length > 0 ? trimmed : null };
+    }
     return this.prisma.study.update({
       where: { id },
-      data: dto,
-      include: { patient: true },
+      data,
+      include: {
+        patient: true,
+        _count: { select: { permissions: true } },
+      },
     });
   }
 
