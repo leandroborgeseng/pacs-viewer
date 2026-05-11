@@ -82,6 +82,15 @@ export function formatApiError(err: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Resposta de `GET /studies/me/summary` (mesmo alcance RBAC que a worklist). */
+export type StudiesMeSummary = {
+  studyCount: number;
+  studiesWithReportUrl: number;
+  totalSeries: number | null;
+  totalInstances: number | null;
+  modalityTop: { modality: string; count: number }[];
+};
+
 export type StudyRow = {
   id: string;
   studyInstanceUID: string;

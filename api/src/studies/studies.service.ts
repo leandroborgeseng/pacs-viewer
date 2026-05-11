@@ -42,6 +42,17 @@ export type StudyCatalogRow = {
   };
 };
 
+/** Agregação leve sobre o mesmo catálogo RBAC+PACS que `listForCurrentUser`. */
+export type StudyCatalogSummary = {
+  studyCount: number;
+  studiesWithReportUrl: number;
+  /** Soma de séries quando todos os estudos trazem a tag DICOM no QIDO; senão null. */
+  totalSeries: number | null;
+  /** Soma de instâncias quando todos trazem a tag; senão null. */
+  totalInstances: number | null;
+  modalityTop: { modality: string; count: number }[];
+};
+
 @Injectable()
 export class StudiesService {
   constructor(
@@ -71,6 +82,51 @@ export class StudiesService {
 
     const merged = await this.mergePortalStudyExtras(scoped);
     return this.sortStudyRows(merged);
+  }
+
+  /**
+   * Resumo do catálogo visível ao utilizador (um pedido Orthanc igual a `GET /studies/me`;
+   * resposta menor para dashboards).
+   */
+  async summaryForCurrentUser(user: RequestUser): Promise<StudyCatalogSummary> {
+    const rows = await this.listForCurrentUser(user);
+    return this.catalogRowsToSummary(rows);
+  }
+
+  private catalogRowsToSummary(rows: StudyCatalogRow[]): StudyCatalogSummary {
+    const studyCount = rows.length;
+    const studiesWithReportUrl = rows.reduce(
+      (n, r) => n + (r.reportUrl && r.reportUrl.length > 0 ? 1 : 0),
+      0,
+    );
+
+    let totalSeries: number | null = null;
+    if (studyCount > 0 && rows.every((r) => r.seriesCount != null)) {
+      totalSeries = rows.reduce((acc, r) => acc + (r.seriesCount as number), 0);
+    }
+    let totalInstances: number | null = null;
+    if (studyCount > 0 && rows.every((r) => r.instanceCount != null)) {
+      totalInstances = rows.reduce((acc, r) => acc + (r.instanceCount as number), 0);
+    }
+
+    const modalityMap = new Map<string, number>();
+    for (const r of rows) {
+      const m = r.modality?.trim();
+      if (!m) continue;
+      modalityMap.set(m, (modalityMap.get(m) ?? 0) + 1);
+    }
+    const modalityTop = [...modalityMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([modality, count]) => ({ modality, count }));
+
+    return {
+      studyCount,
+      studiesWithReportUrl,
+      totalSeries,
+      totalInstances,
+      modalityTop,
+    };
   }
 
   /** Junta dados do portal (`Study.reportUrl`) ao catálogo PACS pela StudyInstanceUID. */

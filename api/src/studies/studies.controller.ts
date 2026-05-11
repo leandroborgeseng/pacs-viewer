@@ -20,6 +20,11 @@ import { StudiesService } from './studies.service';
 export class StudiesController {
   constructor(private studies: StudiesService) {}
 
+  @Get('me/summary')
+  summaryMine(@CurrentUser() user: RequestUser) {
+    return this.studies.summaryForCurrentUser(user);
+  }
+
   @Get('me')
   listMine(@CurrentUser() user: RequestUser) {
     return this.studies.listForCurrentUser(user);
