@@ -49,7 +49,8 @@ const src = `/* gerado por scripts/write-ohif-app-config.mjs — não editar em 
     strictZSpacingForVolumeViewport: true,
     showWarningMessageForCrossOrigin: false,
     investigationalUseDialog: { option: "never" },
-    showPatientInfo: "visibleCollapsed",
+    /** sempre expandido; não permite colapsar para o texto "Patient" (OHIF só traduz dentro do modo expandido) */
+    showPatientInfo: "visibleReadOnly",
     whiteLabeling: {
       createLogoComponentFn: function (React) {
         return React.createElement(

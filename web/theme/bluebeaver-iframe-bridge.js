@@ -88,4 +88,33 @@
       }
     } catch (_e) {}
   });
+
+  /** OHIF cabeça paciente: labels em inglês quando colapsado (ex.: vários pacientes); traduz sem dependência de fork OHIF */
+  function localizePatientCollapsedLabels() {
+    try {
+      var nodes = document.querySelectorAll("div.text-primary-active.self-center");
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        if (el.children.length > 0) continue;
+        var t = String(el.textContent || "").trim();
+        if (t === "Patient") el.textContent = "Paciente";
+        else if (t === "Multiple Patients") el.textContent = "Vários pacientes";
+      }
+    } catch (_e) {}
+  }
+  var _locTz;
+  function scheduleLocalize() {
+    clearTimeout(_locTz);
+    _locTz = setTimeout(localizePatientCollapsedLabels, 40);
+  }
+  try {
+    var mo = new MutationObserver(scheduleLocalize);
+    function startObserve() {
+      if (!document.body) return;
+      mo.observe(document.body, { subtree: true, childList: true, characterData: true });
+      scheduleLocalize();
+    }
+    if (document.body) startObserve();
+    else document.addEventListener("DOMContentLoaded", startObserve, { once: true });
+  } catch (_e) {}
 })();
