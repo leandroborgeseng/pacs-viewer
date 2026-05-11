@@ -17,6 +17,7 @@ const jsDest = path.join(publicOhif, "bluebeaver-iframe-bridge.js");
 
 const MARKER_HEAD = "<!-- bluebeaver-ohif-assets -->";
 const MARKER_BODY = "<!-- bluebeaver-ohif-bridge -->";
+const MARKER_PT_BOOT = "<!-- bb-ohif-pt-bootstrap -->";
 
 if (!fs.existsSync(indexPath)) {
   console.warn("[bluebeaver-ohif] sem index.html em public/ohif — ignorado.");
@@ -56,6 +57,18 @@ if (/<title[^>]*>[\s\S]*?<\/title>/i.test(html)) {
     "<title>BlueBeaver · Leitor DICOM</title>",
   );
   changed = true;
+}
+
+/** i18next: ordem típica querystring → localStorage; força pt-BR no bundle já incluído no OHIF. */
+if (!html.includes(MARKER_PT_BOOT)) {
+  const ptBoot = `(function(){try{document.documentElement.setAttribute("lang","pt-BR");try{localStorage.setItem("i18nextLng","pt-BR");}catch(_a){}var u=new URL(window.location.href);if(!u.searchParams.has("lng")){u.searchParams.set("lng","pt-BR");history.replaceState({},"",u.toString());}}catch(_e){}})()`;
+  const bootTag =
+    `\n${MARKER_PT_BOOT}\n<script>${ptBoot}</scr` +
+    `ipt>\n`;
+  if (/<head(\s[^>]*)?>/i.test(html)) {
+    html = html.replace(/<head(\s[^>]*)?>/i, (m) => m + bootTag);
+    changed = true;
+  }
 }
 
 if (!html.includes(MARKER_HEAD)) {

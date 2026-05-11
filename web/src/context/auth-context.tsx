@@ -59,24 +59,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [refreshMe]);
 
-  /** Logout pedido a partir da janela do viewer (postMessage do bridge BlueBeaver). */
-  useEffect(() => {
-    function onMessage(ev: MessageEvent) {
-      if (typeof window === "undefined" || ev.origin !== window.location.origin) return;
-      const d = ev.data as { source?: string; type?: string } | null;
-      if (!d || d.source !== "bb-viewer" || d.type !== "BB_LOGOUT") return;
-      void clearBbDicomProxyCookie();
-      setStoredToken(null);
-      setToken(null);
-      setUser(null);
-      if (window.location.pathname !== "/login") {
-        window.location.assign("/login");
-      }
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
-
   const login = useCallback(async (email: string, password: string) => {
     let res: Response;
     try {

@@ -17,7 +17,7 @@ Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), back
 - `api/` — NestJS, Prisma, proxy DICOMweb, auditoria básica.
 - `web/` — Next.js 15, login, dashboard, exames, viewer iframe; **OHIF v3.8.3** compilado no Docker e servido em **`/ohif`**.  
 - `web/scripts/write-ohif-app-config.mjs` — gera `public/ohif/app-config.js`: o OHIF usa **mesma origem** que o portal (`…/bb-api/dicomweb`), e o Next encaminha para `NEXT_PUBLIC_API_URL/dicomweb` (evita CORS/CSP no viewer).  
-- `web/scripts/inject-ohif-assets.mjs` — copia fontes Montserrat para `public/ohif/fonts/` e injeta `bluebeaver-ohif.css` + `bluebeaver-iframe-bridge.js` no `index.html` do OHIF.
+- `web/scripts/inject-ohif-assets.mjs` — copia fontes Montserrat para `public/ohif/fonts/`, injeta `bluebeaver-ohif.css` + `bluebeaver-iframe-bridge.js` no `index.html`, `lang`/título institucional, e bootstrap **pt-BR** (`lng` na URL + cache i18next) antes dos bundles OHIF.
 - `web/ohif-patches/pluginConfig.json` — opcional aplicado na fase Docker do OHIF: activa mais extensões compiladas (`SEG`, `SR`, `PDF`, vídeo, `RT`, métricas, volumes). Microscopia, TMTV e modos pré-clínicos mantêm-se desactivados neste ficheiro para limitar tempo/tamanho de build — pode alterar lá e reconstruir a imagem.
 - `web/ohif-version` — tag Git do OHIF usada no build Docker.  
 - `infra/ohif/app-config.js` — apenas referência legada (contentor separado); não é necessário no fluxo integrado.

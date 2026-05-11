@@ -19,7 +19,7 @@ export function buildOhifViewerAbsoluteUrl(
 ): string {
   if (typeof window === "undefined") return "";
   const base = getOhifBasePath();
-  const q = new URLSearchParams({ StudyInstanceUIDs: studyUID });
+  const q = new URLSearchParams({ StudyInstanceUIDs: studyUID, lng: "pt-BR" });
   if (OHIF_INCLUDE_TOKEN_IN_QUERY) {
     const t = tokenOverride ?? getStoredToken();
     if (t) q.set("access_token", t);
