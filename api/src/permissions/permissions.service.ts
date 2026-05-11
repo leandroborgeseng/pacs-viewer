@@ -56,6 +56,7 @@ export class PermissionsService {
         },
       });
       this.studiesService.invalidateStudyCatalogCache();
+      this.studiesService.invalidatePortalAccessCaches();
       return permission;
     } catch {
       throw new ConflictException('Permissão já existente para este par usuário/estudo');
@@ -69,6 +70,7 @@ export class PermissionsService {
       throw new NotFoundException('Permissão não encontrada');
     }
     this.studiesService.invalidateStudyCatalogCache();
+    this.studiesService.invalidatePortalAccessCaches();
     return { ok: true };
   }
 }

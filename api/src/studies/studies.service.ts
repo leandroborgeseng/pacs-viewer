@@ -42,6 +42,13 @@ export class StudiesService {
     { expiresAt: number; rows: StudyCatalogRow[] }
   >();
 
+  /** Snapshot partilhado do QIDO Orthanc (evita N× pedidos iguais em cache miss por médico). */
+  private pacsSnapshot: {
+    expiresAt: number;
+    raw: unknown[];
+    docStudyUids: Set<string>;
+  } | null = null;
+
   constructor(
     private prisma: PrismaService,
     private access: DicomAccessService,
@@ -55,9 +62,15 @@ export class StudiesService {
       Number.isFinite(n) && n >= 0 ? n : 45000;
   }
 
-  /** Limpa o cache QIDO+RBAC+merge ao portal por utilizador (permissões ou mutação em Study). */
+  /** Limpa o cache QIDO+RBAC+merge ao portal por utilizador JWT (`GET /studies/me` e `/studies/me/summary`). */
   invalidateStudyCatalogCache(): void {
     this.catalogCache.clear();
+    this.pacsSnapshot = null;
+  }
+
+  /** RBAC efetivo (lista de StudyInstanceUID) — usar após mudar permissões ou estudos no portal. */
+  invalidatePortalAccessCaches(): void {
+    this.access.invalidateAllowlistCache();
   }
 
   /**
@@ -94,10 +107,7 @@ export class StudiesService {
 
   private async computeFreshListForCurrentUser(user: RequestUser): Promise<StudyCatalogRow[]> {
     const docModalities = this.parseDocSeriesModalitiesFromEnv();
-    const [raw, docStudyUids] = await Promise.all([
-      this.orthanc.fetchStudiesDicomJson(),
-      this.orthanc.fetchStudyUidsForSeriesModalities(docModalities),
-    ]);
+    const { raw, docStudyUids } = await this.getPacsStudySnapshot(docModalities);
     const rows = raw
       .map((item) =>
         this.mapDicomStudyToRow(item, docStudyUids, docModalities),
@@ -115,6 +125,37 @@ export class StudiesService {
 
     const merged = await this.mergePortalStudyExtras(scoped);
     return this.sortStudyRows(merged);
+  }
+
+  /** Um snapshot QIDO partilhado por todos os utilizadores até expirar (mesmo TTL que `STUDIES_CATALOG_CACHE_MS`). */
+  private async getPacsStudySnapshot(
+    docModalities: string[],
+  ): Promise<{ raw: unknown[]; docStudyUids: Set<string> }> {
+    const now = Date.now();
+    if (
+      this.catalogCacheTtlMs > 0 &&
+      this.pacsSnapshot &&
+      this.pacsSnapshot.expiresAt > now
+    ) {
+      return {
+        raw: this.pacsSnapshot.raw,
+        docStudyUids: this.pacsSnapshot.docStudyUids,
+      };
+    }
+    const [raw, docStudyUids] = await Promise.all([
+      this.orthanc.fetchStudiesDicomJson(),
+      this.orthanc.fetchStudyUidsForSeriesModalities(docModalities),
+    ]);
+    if (this.catalogCacheTtlMs > 0) {
+      this.pacsSnapshot = {
+        expiresAt: now + this.catalogCacheTtlMs,
+        raw,
+        docStudyUids,
+      };
+    } else {
+      this.pacsSnapshot = null;
+    }
+    return { raw, docStudyUids };
   }
 
   /** Junta dados do portal (`Study.reportUrl`) ao catálogo PACS pela StudyInstanceUID. */
@@ -159,6 +200,7 @@ export class StudiesService {
       include: { patient: true },
     });
     this.invalidateStudyCatalogCache();
+    this.invalidatePortalAccessCaches();
     return row;
   }
 

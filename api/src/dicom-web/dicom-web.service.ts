@@ -92,7 +92,10 @@ export class DicomWebService implements OnModuleInit {
       });
     }
     const studyFromPath = this.extractStudyUidFromPath(upstreamUrl.pathname);
-    const allowed = await this.access.getAllowedStudyInstanceUIDs(user);
+    const allowed =
+      user.role === Role.ADMIN
+        ? new Set<string>()
+        : await this.access.getAllowedStudyInstanceUIDs(user);
 
     if (studyFromPath && !this.isAllowed(studyFromPath, allowed, user.role)) {
       this.logJson({

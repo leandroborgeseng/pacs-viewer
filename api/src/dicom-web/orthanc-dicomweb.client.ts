@@ -129,11 +129,12 @@ export class OrthancDicomWebClient {
   async fetchStudyUidsForSeriesModalities(
     modalities: readonly string[],
   ): Promise<Set<string>> {
-    const out = new Set<string>();
     const base = this.baseUrl().replace(/\/+$/, '');
-    for (const raw of modalities) {
-      const mod = raw.trim().toUpperCase();
-      if (!mod) continue;
+    const mods = modalities
+      .map((raw) => raw.trim().toUpperCase())
+      .filter(Boolean);
+    const jobs = mods.map(async (mod) => {
+      const chunk = new Set<string>();
       const url = `${base}/series?00080060=${encodeURIComponent(mod)}`;
       try {
         const response = await firstValueFrom(
@@ -153,11 +154,11 @@ export class OrthancDicomWebClient {
               hint: 'resposta inesperada; modalidade ignorada',
             }),
           );
-          continue;
+          return chunk;
         }
         for (const row of response.data) {
           const uid = readDicomJsonStudyInstanceUid(row);
-          if (uid) out.add(uid);
+          if (uid) chunk.add(uid);
         }
       } catch (e) {
         this.logger.warn(
@@ -168,6 +169,11 @@ export class OrthancDicomWebClient {
           }),
         );
       }
+      return chunk;
+    });
+    const out = new Set<string>();
+    for (const chunk of await Promise.all(jobs)) {
+      for (const u of chunk) out.add(u);
     }
     return out;
   }
