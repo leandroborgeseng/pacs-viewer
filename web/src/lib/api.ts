@@ -101,6 +101,25 @@ export type AdminDeleteStudyLaudoResponse = {
   orthancInstancesFailed: number;
 };
 
+/** `GET /audit/logs` (ADMIN) — mutações REST registadas pelo servidor. */
+export type AuditLogItem = {
+  id: string;
+  createdAt: string;
+  action: string;
+  resource: string | null;
+  ip: string | null;
+  metadata: unknown;
+  userId: string | null;
+  user: { id: string; email: string; name: string } | null;
+};
+
+export type AuditLogsPageResponse = {
+  items: AuditLogItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export type PdfLaudoIngestResponse = {
   orthancInstanceId: string;
   sopInstanceUid: string;

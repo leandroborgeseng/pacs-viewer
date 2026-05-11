@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import {
+  resolvedLoginThrottleLimit,
+  resolvedLoginThrottleTtlMs,
+} from './auth-login-throttle.constants';
 import { LoginDto } from './dto/login.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -22,6 +27,12 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({
+    default: {
+      ttl: resolvedLoginThrottleTtlMs(),
+      limit: resolvedLoginThrottleLimit(),
+    },
+  })
   @Post('login')
   login(@Body() dto: LoginDto, @Req() req: Request) {
     const ip = req.ip;

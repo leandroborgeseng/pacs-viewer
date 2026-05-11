@@ -177,7 +177,7 @@ Em produção use HTTPS; o rewrite DICOMweb usa `NEXT_PUBLIC_API_URL` definida n
 - `GET /api/auth/me` — utilizador atual.  
 - `GET /api/studies/me` — estudos visíveis ao perfil.  
 - `GET|POST|… /api/dicomweb/*` — proxy para Orthanc (autenticado).  
-- Admin: `GET /api/users`, `POST /api/users`, `GET /api/patients`, `POST /api/patients`, `GET /api/studies`, `POST /api/studies`, `GET|POST|DELETE /api/permissions`, etc.
+- Admin: `GET /api/users`, `POST /api/users`, `GET /api/patients`, `POST /api/patients`, `GET /api/studies`, `POST /api/studies`, `GET|POST|DELETE /api/permissions`, `GET /api/audit/logs` (lista paginada de mutações REST), etc.
 
 Auditoria: interceptor em mutações (exceto login e tráfego DICOMweb).
 
@@ -188,7 +188,7 @@ Auditoria: interceptor em mutações (exceto login e tráfego DICOMweb).
 - Em **produção**, o serviço Web envia cabeçalho **`Content-Security-Policy`** (sem dependência de domínios externos no viewer; `connect-src` inclui a origem derivada de `NEXT_PUBLIC_API_URL` quando é URL absoluta). Em `next dev` o cabeçalho não é aplicado para não quebrar Turbopack / WebSockets.  
 - **Cookies HttpOnly / BFF (roadmap)** — passos típicos para retirar o JWT do `localStorage`: (1) endpoint de login na mesma origem que o browser (BFF Next ou API atrás do mesmo domínio reverso); (2) `Set-Cookie` com `HttpOnly`, `Secure`, `SameSite` adequado (**são** muitas vezes `lax` ou `strict` conforme iframe/pop-up); (3) CSRF se usar cookies em mutações (token duplo cookie, ou `SameSite=strict` com cuidado com OHIF em pop-up); (4) o viewer OHIF deixa de levar token na query — ex.: cookie de sessão visível só no domínio da API com `credentials: 'include'` no fetch do `app-config` / axios (implica CORS com `credentials` e origem explícita). Esta arquitetura não está implementada no MVP actual; convém planear antes de exposição ampla na Internet.  
 - Token na query do OHIF pode aparecer em logs de proxies — minimize retention e use HTTPS.  
-- Rate limit global (`ThrottlerModule`) aplicado à API.
+- Rate limit global (`ThrottlerModule`) aplicado à API. **`POST /api/auth/login`** tem limite **mais apertado** (predef.: 20 tentativas / minuto por IP), configurável com `AUTH_LOGIN_THROTTLE_LIMIT` e `AUTH_LOGIN_THROTTLE_TTL_MS`. Em produção atrás de proxy (Railway, etc.), definir **`TRUST_PROXY_HOPS=1`** (ou mais hops) para o Express usar `X-Forwarded-For` em `req.ip` e o throttle identificar cliente real.
 
 ## Observabilidade (proxy DICOMweb)
 

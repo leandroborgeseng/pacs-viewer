@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { PencilIcon, Loader2, Globe, Trash2 } from "lucide-react";
-import { apiFetch, formatApiError, type AdminDeleteStudyLaudoResponse, type IntegrationPacsAdminDto, type IntegrationPacsTestResponse } from "@/lib/api";
+import { PencilIcon, Loader2, Globe, Trash2, ScrollText } from "lucide-react";
+import {
+  apiFetch,
+  formatApiError,
+  type AdminDeleteStudyLaudoResponse,
+  type AuditLogsPageResponse,
+  type IntegrationPacsAdminDto,
+  type IntegrationPacsTestResponse,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -107,6 +114,23 @@ export default function AdminPage() {
   const [pacsClearPwd, setPacsClearPwd] = useState(false);
   const [savingPacs, setSavingPacs] = useState(false);
   const [testingPacs, setTestingPacs] = useState(false);
+  const [adminTab, setAdminTab] = useState("users");
+  const [auditLogs, setAuditLogs] = useState<AuditLogsPageResponse | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditPageSize, setAuditPageSize] = useState(25);
+  const [auditFilterDraft, setAuditFilterDraft] = useState({
+    action: "",
+    userId: "",
+    from: "",
+    to: "",
+  });
+  const [auditFilters, setAuditFilters] = useState({
+    action: "",
+    userId: "",
+    from: "",
+    to: "",
+  });
 
   useEffect(() => {
     void (async () => {
@@ -137,6 +161,39 @@ export default function AdminPage() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (adminTab !== "audit") return;
+    let cancelled = false;
+    setAuditLoading(true);
+    void (async () => {
+      try {
+        const sp = new URLSearchParams();
+        sp.set("page", String(auditPage));
+        sp.set("pageSize", String(auditPageSize));
+        if (auditFilters.action.trim())
+          sp.set("action", auditFilters.action.trim());
+        if (auditFilters.userId.trim())
+          sp.set("userId", auditFilters.userId.trim());
+        if (auditFilters.from.trim()) sp.set("from", auditFilters.from.trim());
+        if (auditFilters.to.trim()) sp.set("to", auditFilters.to.trim());
+        const data = await apiFetch<AuditLogsPageResponse>(
+          `/audit/logs?${sp.toString()}`,
+        );
+        if (!cancelled) setAuditLogs(data);
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(formatApiError(err, "Não foi possível carregar a auditoria"));
+          setAuditLogs(null);
+        }
+      } finally {
+        if (!cancelled) setAuditLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminTab, auditPage, auditPageSize, auditFilters]);
 
   useEffect(() => {
     if (!pacs) return;
@@ -277,18 +334,23 @@ export default function AdminPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Administração</h1>
         <p className="text-muted-foreground">
-          Visão consolidada de utilizadores, pacientes, estudos e permissões. A ligação ao
-          PACS Orthanc e a URL pública do portal configuram-se em{" "}
+          Visão consolidada de utilizadores, pacientes, estudos, permissões e{" "}
+          <strong className="font-medium text-foreground/85">auditoria de mutações REST</strong>.
+          A ligação ao PACS Orthanc e a URL pública do portal configuram-se em{" "}
           <strong className="font-medium text-foreground/85">Integração (PACS)</strong>.
           O URL do laudo por estudo edita-se em Estudos.
         </p>
       </div>
-      <Tabs defaultValue="users">
+      <Tabs value={adminTab} onValueChange={setAdminTab}>
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="users">Utilizadores</TabsTrigger>
           <TabsTrigger value="patients">Pacientes</TabsTrigger>
           <TabsTrigger value="studies">Estudos</TabsTrigger>
           <TabsTrigger value="perms">Permissões</TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1">
+            <ScrollText className="size-3.5 opacity-80" aria-hidden />
+            Auditoria
+          </TabsTrigger>
           <TabsTrigger value="integration" className="gap-1">
             <Globe className="size-3.5 opacity-80" aria-hidden />
             Integração (PACS)
@@ -497,6 +559,235 @@ export default function AdminPage() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="audit" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Auditoria (mutações REST)</CardTitle>
+              <CardDescription>
+                Registo de <strong className="text-foreground/90">POST/PATCH/PUT/DELETE</strong> à
+                API (exclui <span className="font-mono text-xs">/auth/login</span> duplicado e
+                pedidos massivos a <span className="font-mono text-xs">/dicomweb</span>). Use filtros para
+                reduzir resultado; exportação pode evoluir depois.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bb-audit-action" className="text-xs">
+                    Texto na acção
+                  </Label>
+                  <Input
+                    id="bb-audit-action"
+                    value={auditFilterDraft.action}
+                    onChange={(e) =>
+                      setAuditFilterDraft((d) => ({ ...d, action: e.target.value }))
+                    }
+                    placeholder="ex.: PATCH ou LOGIN"
+                    className="h-9 w-[200px]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bb-audit-user" className="text-xs">
+                    Utilizador (UUID)
+                  </Label>
+                  <Input
+                    id="bb-audit-user"
+                    value={auditFilterDraft.userId}
+                    onChange={(e) =>
+                      setAuditFilterDraft((d) => ({ ...d, userId: e.target.value }))
+                    }
+                    placeholder="user id"
+                    className="h-9 w-[260px] font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bb-audit-from" className="text-xs">
+                    Desde (data ISO)
+                  </Label>
+                  <Input
+                    id="bb-audit-from"
+                    type="date"
+                    value={auditFilterDraft.from.length <= 10 ? auditFilterDraft.from : ""}
+                    onChange={(e) =>
+                      setAuditFilterDraft((d) => ({ ...d, from: e.target.value }))
+                    }
+                    className="h-9 w-[160px]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bb-audit-to" className="text-xs">
+                    Até
+                  </Label>
+                  <Input
+                    id="bb-audit-to"
+                    type="date"
+                    value={auditFilterDraft.to.length <= 10 ? auditFilterDraft.to : ""}
+                    onChange={(e) =>
+                      setAuditFilterDraft((d) => ({ ...d, to: e.target.value }))
+                    }
+                    className="h-9 w-[160px]"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => {
+                    setAuditFilters({
+                      action: auditFilterDraft.action,
+                      userId: auditFilterDraft.userId,
+                      from: auditFilterDraft.from,
+                      to: auditFilterDraft.to,
+                    });
+                    setAuditPage(1);
+                  }}
+                >
+                  Aplicar filtros
+                </Button>
+              </div>
+              {auditLoading ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" aria-hidden /> A carregar…
+                </p>
+              ) : !auditLogs ? (
+                <p className="text-sm text-muted-foreground">Sem dados.</p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    <span className="tabular-nums font-medium text-foreground">
+                      {auditLogs.total.toLocaleString("pt-PT")}
+                    </span>{" "}
+                    registo(s) · página{" "}
+                    <span className="tabular-nums">{auditLogs.page}</span> de{" "}
+                    <span className="tabular-nums">
+                      {Math.max(1, Math.ceil(auditLogs.total / auditLogs.pageSize))}
+                    </span>
+                  </p>
+                  <div className="overflow-x-auto rounded-xl border border-border/60 bg-background/30">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border/60 hover:bg-transparent">
+                          <TableHead className="whitespace-nowrap">Data</TableHead>
+                          <TableHead>Utilizador</TableHead>
+                          <TableHead className="min-w-[220px]">Acção</TableHead>
+                          <TableHead className="min-w-[140px]">Recurso</TableHead>
+                          <TableHead>IP</TableHead>
+                          <TableHead className="min-w-[120px]">Metadados</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {auditLogs.items.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground">
+                              Nenhum registo nesta página com estes filtros.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          auditLogs.items.map((row) => (
+                            <TableRow key={row.id}>
+                              <TableCell className="whitespace-nowrap font-mono text-[11px] tabular-nums">
+                                {new Date(row.createdAt).toLocaleString("pt-PT")}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {row.user ? (
+                                  <span>
+                                    <span className="font-medium">{row.user.name}</span>
+                                    <br />
+                                    <span className="text-[11px] text-muted-foreground">
+                                      {row.user.email}
+                                    </span>
+                                  </span>
+                                ) : row.userId ? (
+                                  <span className="font-mono text-[10px] text-muted-foreground">
+                                    {row.userId.slice(0, 8)}…
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="max-w-[320px] break-all font-mono text-[11px]">
+                                {row.action}
+                              </TableCell>
+                              <TableCell className="max-w-[240px] break-all font-mono text-[10px] text-muted-foreground">
+                                {row.resource ?? "—"}
+                              </TableCell>
+                              <TableCell className="font-mono text-[11px]">
+                                {row.ip ?? "—"}
+                              </TableCell>
+                              <TableCell className="max-w-[180px]">
+                                <span
+                                  className="line-clamp-2 font-mono text-[10px] text-muted-foreground"
+                                  title={
+                                    row.metadata == null
+                                      ? undefined
+                                      : JSON.stringify(row.metadata)
+                                  }
+                                >
+                                  {row.metadata == null ? "—" : JSON.stringify(row.metadata)}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                      Por página
+                      <select
+                        className="h-9 rounded-md border border-border/80 bg-background px-2 text-sm"
+                        value={auditPageSize}
+                        onChange={(e) => {
+                          const n = Number.parseInt(e.target.value, 10);
+                          setAuditPageSize(Number.isFinite(n) ? n : 25);
+                          setAuditPage(1);
+                        }}
+                      >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Página anterior"
+                        disabled={auditPage <= 1 || auditLoading}
+                        onClick={() => setAuditPage((p) => Math.max(1, p - 1))}
+                      >
+                        ‹
+                      </Button>
+                      <span className="text-xs tabular-nums">{auditPage}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Página seguinte"
+                        disabled={
+                          auditLoading ||
+                          auditPage * auditPageSize >= auditLogs.total
+                        }
+                        onClick={() =>
+                          setAuditPage((p) =>
+                            p * auditPageSize < auditLogs.total ? p + 1 : p,
+                          )
+                        }
+                      >
+                        ›
+                      </Button>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

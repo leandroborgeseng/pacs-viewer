@@ -471,7 +471,7 @@ export default function ExamesPage() {
                         <TableHead>Paciente</TableHead>
                         <TableHead>Data do exame</TableHead>
                         <TableHead>Mod.</TableHead>
-                        <TableHead className="min-w-[160px]">Descrição</TableHead>
+                        <TableHead className="min-w-[180px]">Descrição do exame</TableHead>
                         <TableHead>Se/Img</TableHead>
                         <TableHead>Laudo</TableHead>
                         <TableHead className="w-[52px] text-right" aria-label="Mais ações" />

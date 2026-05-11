@@ -4,6 +4,18 @@ import { firstValueFrom } from 'rxjs';
 import { isAxiosError } from 'axios';
 import { IntegrationService } from '../integration/integration.service';
 
+/** Tags hex pedidas ao QIDO (Study Description inclui `(0008,1030)`). */
+const STUDY_LEVEL_QIDO_INCLUDEFIELDS = [
+  '0020000D',
+  '00080020',
+  '00081030',
+  '00080061',
+  '00100010',
+  '00100020',
+  '00201206',
+  '00201208',
+] as const;
+
 /** Cliente mínimo para QIDO-RS no Orthanc (catálogo de estudos). */
 @Injectable()
 export class OrthancDicomWebClient {
@@ -36,19 +48,26 @@ export class OrthancDicomWebClient {
    * Lista todos os estudos em formato DICOM JSON (array de objetos com tags).
    */
   async fetchStudiesDicomJson(): Promise<unknown[]> {
-    const url = `${this.baseUrl()}/studies`;
+    const root = this.baseUrl().replace(/\/+$/, '');
+    const q = STUDY_LEVEL_QIDO_INCLUDEFIELDS.map(
+      (tag) => `includefield=${encodeURIComponent(tag)}`,
+    ).join('&');
+    const urlsTried = [`${root}/studies?${q}`, `${root}/studies`] as const;
+    let urlForLog = urlsTried[0];
     try {
-      const response = await firstValueFrom(
-        this.http.get<unknown>(url, {
+      let response = await firstValueFrom(
+        this.http.get<unknown>(urlsTried[0], {
           headers: this.upstreamHeaders(),
           validateStatus: () => true,
         }),
       );
+
+      // Alguns gateways rejeitam `includefield`; o Orthanc típico aceita-o.
       if (response.status === 401 || response.status === 403) {
         this.logger.warn(
           JSON.stringify({
             event: 'orthanc.qido_auth',
-            url,
+            url: urlsTried[0],
             status: response.status,
           }),
         );
@@ -56,11 +75,42 @@ export class OrthancDicomWebClient {
           'PACS rejeitou o acesso (credenciais). Defina ORTHANC_USERNAME e ORTHANC_PASSWORD na API se o Orthanc exige Basic Auth.',
         );
       }
+
+      if (response.status >= 400) {
+        this.logger.warn(
+          JSON.stringify({
+            event: 'orthanc.qido_retry_no_includefield',
+            firstStatus: response.status,
+            firstUrl: urlsTried[0],
+          }),
+        );
+        urlForLog = urlsTried[1];
+        response = await firstValueFrom(
+          this.http.get<unknown>(urlsTried[1], {
+            headers: this.upstreamHeaders(),
+            validateStatus: () => true,
+          }),
+        );
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        this.logger.warn(
+          JSON.stringify({
+            event: 'orthanc.qido_auth',
+            url: urlForLog,
+            status: response.status,
+          }),
+        );
+        throw new ServiceUnavailableException(
+          'PACS rejeitou o acesso (credenciais). Defina ORTHANC_USERNAME e ORTHANC_PASSWORD na API se o Orthanc exige Basic Auth.',
+        );
+      }
+
       if (response.status >= 400) {
         this.logger.warn(
           JSON.stringify({
             event: 'orthanc.qido_http_error',
-            url,
+            url: urlForLog,
             status: response.status,
           }),
         );
@@ -73,7 +123,7 @@ export class OrthancDicomWebClient {
         this.logger.warn(
           JSON.stringify({
             event: 'orthanc.qido_parse',
-            url,
+            url: urlForLog,
             hint: 'corpo não é JSON array (application/dicom+json esperado)',
           }),
         );
@@ -88,7 +138,7 @@ export class OrthancDicomWebClient {
         this.logger.error(
           JSON.stringify({
             event: 'orthanc.qido_network',
-            url,
+            url: urlForLog,
             code: e.code ?? null,
             message: e.message,
             status: e.response?.status ?? null,
@@ -112,7 +162,7 @@ export class OrthancDicomWebClient {
       this.logger.error(
         JSON.stringify({
           event: 'orthanc.qido_unknown',
-          url,
+          url: urlForLog,
           message: e instanceof Error ? e.message : String(e),
         }),
       );

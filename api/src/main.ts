@@ -43,6 +43,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,
   });
+  const hops = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '', 10);
+  if (!Number.isNaN(hops) && hops >= 1) {
+    app.set('trust proxy', hops);
+  }
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.use(express.json({ limit: '10mb' }));
   expressApp.use(

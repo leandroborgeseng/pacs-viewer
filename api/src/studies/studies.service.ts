@@ -20,6 +20,7 @@ export type { StudyCatalogRow, StudyCatalogSummary } from './study-catalog.types
 
 const TAG_STUDY_UID = '0020000D';
 const TAG_STUDY_DATE = '00080020';
+/** Study Description — (0008,1030) — descrição do exame (ex.: ULTRASSOM TIREOIDE). */
 const TAG_STUDY_DESC = '00081030';
 const TAG_MODALITIES = '00080061';
 const TAG_PATIENT_NAME = '00100010';
@@ -369,9 +370,22 @@ export class StudiesService {
   private readFirstString(item: unknown, tag: string): string | null {
     if (!item || typeof item !== 'object') return null;
     const t = (item as Record<string, { Value?: unknown[] } | undefined>)[tag];
-    const v = t?.Value?.[0];
-    if (typeof v === 'string' && v.length > 0) return v;
-    return null;
+    const vals = t?.Value;
+    if (!Array.isArray(vals)) return null;
+
+    const parts: string[] = [];
+    for (const el of vals) {
+      let s = '';
+      if (typeof el === 'string') s = el.trim();
+      else if (typeof el === 'number' && Number.isFinite(el)) s = String(el).trim();
+
+      if (s.length === 0) continue;
+      parts.push(s);
+    }
+
+    if (parts.length === 0) return null;
+    if (parts.length === 1) return parts[0] ?? null;
+    return parts.join(' ');
   }
 
   private readPersonName(item: unknown, tag: string): string {
