@@ -1,5 +1,7 @@
 # Roadmap do produto (BlueBeaver / pacs-viewer)
 
+Ver também **[plano-de-melhoria.md](./plano-de-melhoria.md)** (CI, `SKIP_DB_SEED` em produção, backlog técnico).
+
 Referência rápida das fases seguintes após segurança básica (throttle login) e auditoria administrativa (`GET /api/audit/logs` + aba Admin).
 
 ## Concluído recentemente

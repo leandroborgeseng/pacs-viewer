@@ -26,7 +26,9 @@
     } else if (document.webkitExitFullscreen) {
       try {
         document.webkitExitFullscreen();
-      } catch (_e) {}
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -71,7 +73,9 @@
         exitFullscreen();
         try {
           window.close();
-        } catch (_e) {}
+        } catch {
+          /* ignore */
+        }
       });
     }
   }
@@ -86,7 +90,9 @@
         state.user = d.user || null;
         render();
       }
-    } catch (_e) {}
+    } catch {
+      /* ignore */
+    }
   });
 
   /** OHIF cabeça paciente: labels em inglês quando colapsado (ex.: vários pacientes); traduz sem dependência de fork OHIF */
@@ -100,7 +106,9 @@
         if (t === "Patient") el.textContent = "Paciente";
         else if (t === "Multiple Patients") el.textContent = "Vários pacientes";
       }
-    } catch (_e) {}
+    } catch {
+      /* ignore */
+    }
   }
   var _locTz;
   function scheduleLocalize() {
@@ -116,5 +124,7 @@
     }
     if (document.body) startObserve();
     else document.addEventListener("DOMContentLoaded", startObserve, { once: true });
-  } catch (_e) {}
+  } catch {
+    /* ignore */
+  }
 })();

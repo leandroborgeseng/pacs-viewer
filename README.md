@@ -1,5 +1,7 @@
 # BlueBeaver — Portal médico (OHIF v3 + NestJS + Next.js)
 
+[![CI](https://github.com/leandroborgeseng/pacs-viewer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/leandroborgeseng/pacs-viewer/actions/workflows/ci.yml)
+
 Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), backend em **NestJS** com **Prisma/PostgreSQL**, autenticação **JWT** e **RBAC** (ADMIN, MEDICO, PACIENTE). O **Orthanc** expõe DICOMweb apenas ao backend; o navegador fala com o **proxy** `/api/dicomweb`, nunca diretamente com o PACS. O viewer OHIF usa tema **BlueBeaver** (CSS/bridge inject no build), tipografia Montserrat **local** em `/ohif/fonts/` e **CSP** aplicada ao portal em produção.
 
 ## Perfis e regras
@@ -22,6 +24,7 @@ Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), back
 - `web/ohif-version` — tag Git do OHIF usada no build Docker.  
 - `infra/ohif/app-config.js` — apenas referência legada (contêiner OHIF separado); não é necessário no fluxo integrado.
 - `docker-compose.yml` — Postgres, Orthanc, API, Web *(OHIF já incluído na imagem Web)*.
+- [`docs/plano-de-melhoria.md`](docs/plano-de-melhoria.md) — backlog priorizado e itens já aplicados no repositório (CI, seeds em produção, etc.).
 
 ## OHIF integrado (Docker / Railway)
 
@@ -121,7 +124,7 @@ docker compose up --build
 - API: `http://localhost:3001/api`  
 - **Orthanc local (opcional):** `docker compose --profile local-pacs up --build` inclui o serviço em `http://localhost:8042` para desenvolvimento sem PACS remoto.
 
-O **seed** (`prisma/seed.js`) executa **automaticamente** após `prisma migrate deploy` em cada inicialização da API (Dockerfile / Railway). Nos três e-mails de demo, o `upsert` **atualiza** `passwordHash` e `active` — útil se o banco já tinha usuários com senha errada; em produção real mude as senhas ou remova o seed automático.
+O **seed** (`prisma/seed.js`) é executado após `prisma migrate deploy` em cada inicialização da API **no Docker/Railway**, salvo quando **`SKIP_DB_SEED`** está definido como `1`, `true` ou `yes` (recomendado em produção com usuários criados pela instituição). Nos três e-mails de demo, o `upsert` **atualiza** `passwordHash` e `active` quando o seed roda — útil em laboratório; altere ou desative o seed com `SKIP_DB_SEED` em cenários clínicos reais.
 
 ## Integração OHIF ↔ JWT
 
@@ -147,6 +150,7 @@ Para **Orthanc remoto**, configure apenas `ORTHANC_DICOMWEB_ROOT` na API; o nave
 - `JWT_SECRET` — string longa e aleatória (ex. 32+ caracteres). Sem isto, a inicialização falha em ciclo com `[bootstrap] … JWT_SECRET` nos Deploy Logs.
 - `WEB_ORIGIN` — URL **exata** do frontend (ex. `https://xxx.up.railway.app`). **Sem barra no fim.** Em **produção** (`NODE_ENV=production`), pedidos HTTPS vindos de **qualquer** `*.up.railway.app` também são aceitos por CORS (Railway), salvo se você definir `CORS_ALLOW_RAILWAY_PUBLIC=0`. Use `WEB_ORIGIN` para dev local e para restringir origens em deploy próprio.
 - `PORT` — normalmente injetado pelo Railway; não remova.
+- **`SKIP_DB_SEED`** *(opcional)* — `1` / `true` / `yes` faz o processo iniciar sem `prisma db seed` no `Dockerfile` / `api/railway.json` (mantém apenas `migrate deploy`). Omitir mantém comportamento atual com contas demo após migrações.
 
 **Não definir no serviço da API** (não são lidas pelo Nest e confundem o painel): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_OHIF_BASE_PATH`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — basta **`DATABASE_URL`** (já inclui user/password do Postgres). As `NEXT_PUBLIC_*` são só do **build do Web**.
 
