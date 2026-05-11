@@ -796,13 +796,13 @@ export default function AdminPage() {
               <CardDescription className="max-w-3xl space-y-2 text-sm leading-relaxed">
                 <span>
                   A API usa DICOMweb (QIDO) para a lista de exames e REST para ingestão —
-                  não é necessário configurar "worklist" DICOM clássico (MWL). Define aqui o
+                  não é necessário configurar worklist DICOM clássica (MWL). Defina aqui o
                   <strong className="text-foreground/90"> host/IP e porta </strong>a que{" "}
                   <strong className="text-foreground/90">este servidor Nest</strong> consegue
                   ligar (em Docker/Railway use o nome do serviço ou IP interno da rede).
                 </span>
                 <span className="block">
-                  Campos em branco ("host") fazem uso só das variáveis{" "}
+                  Campos em branco (<span className="font-mono">host</span>) fazem uso só das variáveis{" "}
                   <span className="font-mono text-xs">ORTHANC_*</span> no ambiente. A URL
                   pública do portal é usada pelo OHIF (reescrita de links no JSON DICOM).
                 </span>
@@ -1070,7 +1070,7 @@ export default function AdminPage() {
             <SheetTitle>URL do resultado clínico (laudo)</SheetTitle>
             <SheetDescription>
               Estudo ligado ao paciente <strong>{reportEditor?.patientName}</strong>. Este
-              endereço abre ao usuário autorizado na worklist ("Ver resultado"). Use
+              endereço abre ao usuário autorizado na worklist (Ver resultado). Use
               HTTPS sempre que possível. Só pode indicar ou substituir por um novo URL válido —
               remover o laudo ou o estudo faz-se no PACS.
             </SheetDescription>

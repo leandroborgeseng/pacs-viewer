@@ -752,7 +752,7 @@ export default function ExamesPage() {
             <SheetTitle>{laudo.title}</SheetTitle>
             <SheetDescription>
               Resultado clínico ou PDF externo (URL configurada na base do portal). Se o conteúdo
-              não carregar por política do site de origem, use "Abrir em outra aba".
+              não carregar por política do site de origem, use o botão Abrir em outra aba.
             </SheetDescription>
           </SheetHeader>
           {laudo.url ? (
