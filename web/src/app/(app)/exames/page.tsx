@@ -256,14 +256,6 @@ export default function ExamesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Exames</h1>
-        <p className="text-muted-foreground">
-          Worklist institucional alinhada ao PACS · leitura de imagens no OHIF{" "}
-          <strong className="font-medium text-foreground/90">em janela dedicada</strong>.
-          Dica: use o menu <strong className="text-foreground/85">⋯</strong> em cada linha para
-          copiar UID, abrir laudo registado na base do portal, abrir documento encapsulado no PACS
-          (série DOC/OT detetada via DICOMweb) ou, como médico ou administrador, criar um{" "}
-          <strong className="text-foreground/85">laudo PDF</strong> que é enviado ao PACS.
-        </p>
       </div>
 
       <Card className="border-border/80 bg-card/50 shadow-lg shadow-black/5 backdrop-blur-sm">
