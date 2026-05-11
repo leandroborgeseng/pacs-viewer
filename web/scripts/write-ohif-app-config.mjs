@@ -39,6 +39,11 @@ const src = `/* gerado por scripts/write-ohif-app-config.mjs — não editar em 
     showStudyList: true,
     maxNumberOfWebWorkers: 3,
     groupEnabledModesFirst: true,
+    maxNumRequests: {
+      interaction: 120,
+      thumbnail: 80,
+      prefetch: 30,
+    },
     showLoadingIndicator: true,
     showCPUFallbackMessage: true,
     strictZSpacingForVolumeViewport: true,
@@ -52,37 +57,73 @@ const src = `/* gerado por scripts/write-ohif-app-config.mjs — não editar em 
           {
             style: {
               display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              marginLeft: "10px",
-              fontFamily: "Montserrat, ui-sans-serif, system-ui, sans-serif",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: "12px",
+              marginLeft: "8px",
+              fontFamily:
+                '"Montserrat Variable", Montserrat, ui-sans-serif, system-ui, sans-serif',
             },
           },
           React.createElement(
-            "span",
+            "div",
             {
+              "aria-hidden": true,
               style: {
-                fontWeight: 700,
-                fontSize: "15px",
-                color: "#E5E7EB",
-                letterSpacing: "-0.03em",
-                lineHeight: 1.15,
+                width: "38px",
+                height: "38px",
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: "13px",
+                letterSpacing: "-0.04em",
+                color: "#f8fafc",
+                border: "1px solid rgba(46,177,0,0.35)",
+                background:
+                  "linear-gradient(148deg,#0066b2 0%,#084a82 52%,#0a3d54 100%)",
+                boxShadow:
+                  "0 0 0 1px rgba(0,0,0,.25), 0 6px 20px rgba(0,102,178,0.25)",
               },
             },
-            "BlueBeaver"
+            "BB"
           ),
           React.createElement(
-            "span",
+            "div",
             {
               style: {
-                fontSize: "10px",
-                color: "#7ae632",
-                fontWeight: 500,
-                textTransform: "uppercase",
-                letterSpacing: "0.12em",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                lineHeight: 1.2,
               },
             },
-            "Enterprise Viewer"
+            React.createElement(
+              "span",
+              {
+                style: {
+                  fontWeight: 700,
+                  fontSize: "16px",
+                  color: "#F1F5F9",
+                  letterSpacing: "-0.035em",
+                },
+              },
+              "BlueBeaver"
+            ),
+            React.createElement(
+              "span",
+              {
+                style: {
+                  fontSize: "10px",
+                  color: "#9fe86b",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.09em",
+                },
+              },
+              "Leitor DICOM institucional"
+            )
           )
         );
       },

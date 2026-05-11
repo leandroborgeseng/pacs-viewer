@@ -10,6 +10,8 @@ RUN apt-get update \
 WORKDIR /usr/src
 RUN git clone --depth 1 --branch "${OHIF_VERSION}" https://github.com/OHIF/Viewers.git app
 WORKDIR /usr/src/app
+# Activa mais extensões/modos OHIF compilados localmente (SR, SEG, PDF, vídeo, RT, tracking, volumes).
+COPY web/ohif-patches/pluginConfig.json ./platform/app/pluginConfig.json
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable && corepack prepare yarn@1.22.22 --activate
 ENV NODE_OPTIONS=--max_old_space_size=6144

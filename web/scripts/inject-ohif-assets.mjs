@@ -50,6 +50,14 @@ if (/<html[^>]*>/i.test(html)) {
   changed = true;
 }
 
+if (/<title[^>]*>[\s\S]*?<\/title>/i.test(html)) {
+  html = html.replace(
+    /<title[^>]*>[\s\S]*?<\/title>/i,
+    "<title>BlueBeaver · Leitor DICOM</title>",
+  );
+  changed = true;
+}
+
 if (!html.includes(MARKER_HEAD)) {
   const link = `${MARKER_HEAD}
 <link rel="stylesheet" href="./bluebeaver-ohif.css" crossorigin="anonymous" />`;

@@ -18,6 +18,7 @@ Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), back
 - `web/` — Next.js 15, login, dashboard, exames, viewer iframe; **OHIF v3.8.3** compilado no Docker e servido em **`/ohif`**.  
 - `web/scripts/write-ohif-app-config.mjs` — gera `public/ohif/app-config.js`: o OHIF usa **mesma origem** que o portal (`…/bb-api/dicomweb`), e o Next encaminha para `NEXT_PUBLIC_API_URL/dicomweb` (evita CORS/CSP no viewer).  
 - `web/scripts/inject-ohif-assets.mjs` — copia fontes Montserrat para `public/ohif/fonts/` e injeta `bluebeaver-ohif.css` + `bluebeaver-iframe-bridge.js` no `index.html` do OHIF.
+- `web/ohif-patches/pluginConfig.json` — opcional aplicado na fase Docker do OHIF: activa mais extensões compiladas (`SEG`, `SR`, `PDF`, vídeo, `RT`, métricas, volumes). Microscopia, TMTV e modos pré-clínicos mantêm-se desactivados neste ficheiro para limitar tempo/tamanho de build — pode alterar lá e reconstruir a imagem.
 - `web/ohif-version` — tag Git do OHIF usada no build Docker.  
 - `infra/ohif/app-config.js` — apenas referência legada (contentor separado); não é necessário no fluxo integrado.
 - `docker-compose.yml` — Postgres, Orthanc, API, Web *(OHIF já incluído na imagem Web)*.
@@ -26,7 +27,7 @@ Monorepo **self-hosted**: frontend em **Next.js 15** (Tailwind, shadcn/ui), back
 
 O `web/Dockerfile` tem duas fases:
 
-1. **ohif-builder** — clone superficial do repositório [OHIF/Viewers](https://github.com/OHIF/Viewers) (tag em `web/ohif-version`, atualmente **v3.8.3**), `yarn install`, `yarn build` com `PUBLIC_URL=/ohif/` para todos os chunks sob `/ohif/...`.  
+1. **ohif-builder** — clone superficial do repositório [OHIF/Viewers](https://github.com/OHIF/Viewers) (tag em `web/ohif-version`, actualmente **v3.8.3**); copia-se `web/ohif-patches/pluginConfig.json` para `platform/app/pluginConfig.json` do clone; segue-se `yarn install` e `yarn build` com `PUBLIC_URL=/ohif/` para os chunks sob `/ohif/...`.  
 2. **Next.js** — copia `platform/app/dist` → `public/ohif`, corre `write-ohif-app-config.mjs` (usa `NEXT_PUBLIC_API_URL`) e faz `next build`.
 
 O iframe do portal usa o caminho **`NEXT_PUBLIC_OHIF_BASE_PATH`** (predefinição `/ohif`), ou seja, o mesmo domínio que o portal — menos CORS e um único deploy no Railway para UI + viewer.

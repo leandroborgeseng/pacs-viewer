@@ -288,3 +288,39 @@ select {
   border-color: #f87171;
   color: #fff;
 }
+
+/* ── Marca visual adicional sobre o tema OHIF (Cornerstone).
+   Preserve as obrigações de licenciamento OSS (OHIF/MPL) na documentação
+   institucional; aqui apenas reduzimos a “cara pré-definida” ao utilizador final. ── */
+
+/* Miniaturas e painéis com moldura institucional */
+.ohif-scrollbar img,
+[class*="scrollbar"] img[alt*="Thumbnail"] {
+  border-radius: 9px !important;
+  outline: 1px solid rgba(30, 58, 95, 0.5) !important;
+  outline-offset: 1px !important;
+}
+
+/* Botões de ferramentas / segmented — cantos menos “bootstrap genérico” */
+button.inline-flex.flex-shrink.cursor-pointer[class*="rounded"] {
+  border-radius: 10px !important;
+}
+
+button.inline-flex.flex-shrink.cursor-pointer[class*="rounded"]:focus-visible {
+  outline: 2px solid rgba(46, 177, 0, 0.45);
+  outline-offset: 2px;
+}
+
+/* Menus tipo dropdown institucional */
+[class*="popover"],
+div[role="menu"] {
+  border-radius: 12px !important;
+  border: 1px solid var(--bb-border) !important;
+}
+
+/* Fallback: splash / marca antiga apenas por imagem (não remover licença na documentação) */
+aside img[width="148"][height="148"],
+.fixed.inset-0 img[alt="OHIF"] {
+  visibility: hidden !important;
+}
+
