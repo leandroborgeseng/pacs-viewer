@@ -53,7 +53,7 @@ export class OrthancDicomWebClient {
       (tag) => `includefield=${encodeURIComponent(tag)}`,
     ).join('&');
     const urlsTried = [`${root}/studies?${q}`, `${root}/studies`] as const;
-    let urlForLog = urlsTried[0];
+    let urlForLog: string = urlsTried[0];
     try {
       let response = await firstValueFrom(
         this.http.get<unknown>(urlsTried[0], {
