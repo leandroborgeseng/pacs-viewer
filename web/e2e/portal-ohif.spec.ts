@@ -41,4 +41,29 @@ test.describe("Portal BlueBeaver", () => {
       `proxy DICOMweb respondeu ${resp.status()} para ${resp.url()}`,
     ).toBeLessThan(500);
   });
+
+  test("login → dashboard carrega Catálogo visível e GET /studies/me/summary", async ({
+    page,
+  }) => {
+    const summaryResp = page.waitForResponse(
+      (r) =>
+        r.url().includes("/studies/me/summary") &&
+        r.request().method() === "GET" &&
+        r.ok(),
+      { timeout: 60_000 },
+    );
+
+    await page.goto("/login");
+    await page.getByLabel("E-mail").fill("admin@portal.local");
+    await page.getByLabel("Palavra-passe").fill("Admin123!");
+    await page.getByRole("button", { name: "Continuar" }).click();
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+
+    await summaryResp;
+
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Catálogo visível" }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Estudos")).toBeVisible();
+  });
 });

@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { DicomAccessService } from '../dicom-web/dicom-access.service';
 import { OrthancDicomWebClient } from '../dicom-web/orthanc-dicomweb.client';
@@ -11,6 +12,10 @@ import { UpdateStudyDto } from './dto/update-study.dto';
 import { RequestUser } from '../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
+import type { StudyCatalogRow, StudyCatalogSummary } from './study-catalog.types';
+import { buildStudyCatalogSummary } from './study-catalog-summary';
+
+export type { StudyCatalogRow, StudyCatalogSummary } from './study-catalog.types';
 
 const TAG_STUDY_UID = '0020000D';
 const TAG_STUDY_DATE = '00080020';
@@ -23,49 +28,66 @@ const TAG_NUM_SERIES = '00201206';
 /** Number of Study Related Instances (IS) — contagem Orthanc quando disponível. */
 const TAG_NUM_INSTANCES = '00201208';
 
-export type StudyCatalogRow = {
-  id: string;
-  studyInstanceUID: string;
-  studyDescription: string | null;
-  studyDate: string | null;
-  modality: string | null;
-  /** Contagem quando o PACS inclui nos metados QIDO; senão null. */
-  seriesCount: number | null;
-  /** Contagem quando o PACS inclui nos metados QIDO; senão null. */
-  instanceCount: number | null;
-  /** URL opcional registada na BD (laudo PDF/página externa autenticada). */
-  reportUrl: string | null;
-  patient: {
-    id: string;
-    fullName: string;
-    medicalRecordNumber: string;
-  };
-};
-
-/** Agregação leve sobre o mesmo catálogo RBAC+PACS que `listForCurrentUser`. */
-export type StudyCatalogSummary = {
-  studyCount: number;
-  studiesWithReportUrl: number;
-  /** Soma de séries quando todos os estudos trazem a tag DICOM no QIDO; senão null. */
-  totalSeries: number | null;
-  /** Soma de instâncias quando todos trazem a tag; senão null. */
-  totalInstances: number | null;
-  modalityTop: { modality: string; count: number }[];
-};
-
 @Injectable()
 export class StudiesService {
+  private readonly catalogCacheTtlMs: number;
+
+  /** Resposta já filtrada/ordenada/merge ao portal por utilizador JWT. */
+  private readonly catalogCache = new Map<
+    string,
+    { expiresAt: number; rows: StudyCatalogRow[] }
+  >();
+
   constructor(
     private prisma: PrismaService,
     private access: DicomAccessService,
     private orthanc: OrthancDicomWebClient,
-  ) {}
+    configService: ConfigService,
+  ) {
+    const raw = configService.get<string | undefined>('STUDIES_CATALOG_CACHE_MS');
+    const n = parseInt(String(raw ?? '45000'), 10);
+    this.catalogCacheTtlMs =
+      Number.isFinite(n) && n >= 0 ? n : 45000;
+  }
+
+  /** Limpa o cache QIDO+RBAC+merge ao portal por utilizador (permissões ou mutação em Study). */
+  invalidateStudyCatalogCache(): void {
+    this.catalogCache.clear();
+  }
 
   /**
    * Catálogo de exames: QIDO no PACS (Orthanc), filtrado por RBAC na API.
    * ADMIN vê todos os estudos no PACS; MEDICO/PACIENTE só UIDs autorizados na BD.
    */
+
   async listForCurrentUser(user: RequestUser): Promise<StudyCatalogRow[]> {
+    if (this.catalogCacheTtlMs <= 0) {
+      return this.computeFreshListForCurrentUser(user);
+    }
+    const cacheKey = `${user.sub}:${user.role}`;
+    const now = Date.now();
+    const hit = this.catalogCache.get(cacheKey);
+    if (hit && hit.expiresAt > now) {
+      return hit.rows;
+    }
+
+    const rows = await this.computeFreshListForCurrentUser(user);
+    this.catalogCache.set(cacheKey, {
+      expiresAt: now + this.catalogCacheTtlMs,
+      rows,
+    });
+    return rows;
+  }
+
+  /**
+   * Resumo do catálogo visível ao utilizador — reaproveita o cache de `listForCurrentUser`.
+   */
+  async summaryForCurrentUser(user: RequestUser): Promise<StudyCatalogSummary> {
+    const rows = await this.listForCurrentUser(user);
+    return buildStudyCatalogSummary(rows);
+  }
+
+  private async computeFreshListForCurrentUser(user: RequestUser): Promise<StudyCatalogRow[]> {
     const raw = await this.orthanc.fetchStudiesDicomJson();
     const rows = raw
       .map((item) => this.mapDicomStudyToRow(item))
@@ -82,51 +104,6 @@ export class StudiesService {
 
     const merged = await this.mergePortalStudyExtras(scoped);
     return this.sortStudyRows(merged);
-  }
-
-  /**
-   * Resumo do catálogo visível ao utilizador (um pedido Orthanc igual a `GET /studies/me`;
-   * resposta menor para dashboards).
-   */
-  async summaryForCurrentUser(user: RequestUser): Promise<StudyCatalogSummary> {
-    const rows = await this.listForCurrentUser(user);
-    return this.catalogRowsToSummary(rows);
-  }
-
-  private catalogRowsToSummary(rows: StudyCatalogRow[]): StudyCatalogSummary {
-    const studyCount = rows.length;
-    const studiesWithReportUrl = rows.reduce(
-      (n, r) => n + (r.reportUrl && r.reportUrl.length > 0 ? 1 : 0),
-      0,
-    );
-
-    let totalSeries: number | null = null;
-    if (studyCount > 0 && rows.every((r) => r.seriesCount != null)) {
-      totalSeries = rows.reduce((acc, r) => acc + (r.seriesCount as number), 0);
-    }
-    let totalInstances: number | null = null;
-    if (studyCount > 0 && rows.every((r) => r.instanceCount != null)) {
-      totalInstances = rows.reduce((acc, r) => acc + (r.instanceCount as number), 0);
-    }
-
-    const modalityMap = new Map<string, number>();
-    for (const r of rows) {
-      const m = r.modality?.trim();
-      if (!m) continue;
-      modalityMap.set(m, (modalityMap.get(m) ?? 0) + 1);
-    }
-    const modalityTop = [...modalityMap.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([modality, count]) => ({ modality, count }));
-
-    return {
-      studyCount,
-      studiesWithReportUrl,
-      totalSeries,
-      totalInstances,
-      modalityTop,
-    };
   }
 
   /** Junta dados do portal (`Study.reportUrl`) ao catálogo PACS pela StudyInstanceUID. */
@@ -166,10 +143,12 @@ export class StudiesService {
       where: { id: dto.patientId },
     });
     if (!patient) throw new NotFoundException('Paciente não encontrado');
-    return this.prisma.study.create({
+    const row = await this.prisma.study.create({
       data: dto,
       include: { patient: true },
     });
+    this.invalidateStudyCatalogCache();
+    return row;
   }
 
   async update(id: string, dto: UpdateStudyDto) {
@@ -179,7 +158,7 @@ export class StudiesService {
       const trimmed = dto.reportUrl?.trim() ?? '';
       data = { ...data, reportUrl: trimmed.length > 0 ? trimmed : null };
     }
-    return this.prisma.study.update({
+    const row = await this.prisma.study.update({
       where: { id },
       data,
       include: {
@@ -187,6 +166,8 @@ export class StudiesService {
         _count: { select: { permissions: true } },
       },
     });
+    this.invalidateStudyCatalogCache();
+    return row;
   }
 
   private async ensureStudy(id: string) {

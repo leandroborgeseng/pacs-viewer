@@ -1,15 +1,22 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
+import { StudiesService } from '../studies/studies.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 
 @Injectable()
 export class PermissionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => StudiesService))
+    private readonly studiesService: StudiesService,
+  ) {}
 
   list() {
     return this.prisma.studyPermission.findMany({
@@ -41,13 +48,15 @@ export class PermissionsService {
     });
     if (!study) throw new NotFoundException('Estudo não encontrado');
     try {
-      return await this.prisma.studyPermission.create({
+      const permission = await this.prisma.studyPermission.create({
         data: dto,
         include: {
           user: { select: { id: true, email: true, name: true } },
           study: { select: { id: true, studyInstanceUID: true } },
         },
       });
+      this.studiesService.invalidateStudyCatalogCache();
+      return permission;
     } catch {
       throw new ConflictException('Permissão já existente para este par usuário/estudo');
     }
@@ -59,6 +68,7 @@ export class PermissionsService {
     } catch {
       throw new NotFoundException('Permissão não encontrada');
     }
+    this.studiesService.invalidateStudyCatalogCache();
     return { ok: true };
   }
 }
