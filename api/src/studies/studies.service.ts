@@ -38,7 +38,7 @@ const DEFAULT_DOC_SERIES_MODALITIES = ['DOC', 'OT'] as const;
 export class StudiesService {
   private readonly catalogCacheTtlMs: number;
 
-  /** Resposta já filtrada/ordenada/merge ao portal por utilizador JWT. */
+  /** Resposta já filtrada/ordenada mesclada com o portal por usuário JWT. */
   private readonly catalogCache = new Map<
     string,
     { expiresAt: number; rows: StudyCatalogRow[] }
@@ -64,7 +64,7 @@ export class StudiesService {
       Number.isFinite(n) && n >= 0 ? n : 45000;
   }
 
-  /** Limpa o cache QIDO+RBAC+merge ao portal por utilizador JWT (`GET /studies/me` e `/studies/me/summary`). */
+  /** Limpa o cache QIDO+RBAC+merge do portal por usuário JWT (`GET /studies/me` e `/studies/me/summary`). */
   invalidateStudyCatalogCache(): void {
     this.catalogCache.clear();
     this.pacsSnapshot = null;
@@ -100,7 +100,7 @@ export class StudiesService {
   }
 
   /**
-   * Resumo do catálogo visível ao utilizador — reaproveita o cache de `listForCurrentUser`.
+   * Resumo do catálogo visível ao usuário — reutiliza o cache de `listForCurrentUser`.
    */
   async summaryForCurrentUser(user: RequestUser): Promise<StudyCatalogSummary> {
     const rows = await this.listForCurrentUser(user);
@@ -176,7 +176,7 @@ export class StudiesService {
     });
   }
 
-  /** Um snapshot QIDO partilhado por todos os utilizadores até expirar (mesmo TTL que `STUDIES_CATALOG_CACHE_MS`). */
+  /** Um snapshot QIDO compartilhado entre todos os usuários até expirar (mesmo TTL que `STUDIES_CATALOG_CACHE_MS`). */
   private async getPacsStudySnapshot(
     docModalities: string[],
   ): Promise<{ raw: unknown[]; docStudyUids: Set<string> }> {
@@ -277,7 +277,7 @@ export class StudiesService {
     return row;
   }
 
-  /** Não permite apagar o laudo pela API do portal; só alteração para URL não vazio. */
+  /** Não permite remover o laudo pela API do portal; só alteração para URL não vazio. */
   private rejectEmptyReportUrl(raw: string | null | undefined): string {
     const t = typeof raw === 'string' ? raw.trim() : '';
     if (!t.length) {

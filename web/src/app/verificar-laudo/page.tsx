@@ -61,7 +61,7 @@ function VerificarInner() {
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Verificar laudo</h1>
         <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-          Consulte se o código impresso ou partilhado corresponde a um registo institucional
+          Consulte se o código impresso ou compartilhado corresponde a um registro institucional
           do portal com integridade verificável (selo sintético, não assinatura ICP-Brasil).
         </p>
       </div>
@@ -69,7 +69,7 @@ function VerificarInner() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {!c ? "Informe o código" : state.kind === "loading" ? "A validar…" : "Resultado"}
+            {!c ? "Digite o código" : state.kind === "loading" ? "Validando…" : "Resultado"}
           </CardTitle>
           <CardDescription className="text-xs leading-relaxed">
             O código tem 32 caracteres hexadecimais (sem hífenes), igual ao texto do PDF gerado pelo
@@ -108,7 +108,7 @@ function VerificarInner() {
 
           {!c ? (
             <p className="text-muted-foreground text-xs">
-              Utilize o parâmetro na ligação (<span className="font-mono">?c=</span>) ou o campo
+              Use o parâmetro na URL (<span className="font-mono">?c=</span>) ou o campo
               acima.
             </p>
           ) : null}
@@ -116,7 +116,7 @@ function VerificarInner() {
           {state.kind === "ok" ? (
             <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-3 text-xs">
               <p>
-                Registo encontrado{" "}
+                Registro encontrado{" "}
                 <strong className="text-foreground">
                   {state.data.cryptographicIntegrity
                     ? "e selo íntegro"
@@ -133,7 +133,7 @@ function VerificarInner() {
               ) : null}
               {state.data.issuedAtUtc ? (
                 <p>
-                  <span className="text-muted-foreground">Registo (UTC):</span>{" "}
+                  <span className="text-muted-foreground">Registro (UTC):</span>{" "}
                   <span className="font-mono">{state.data.issuedAtUtc}</span>
                 </p>
               ) : null}
@@ -159,7 +159,7 @@ function VerificarInner() {
             <summary className="cursor-pointer">Detalhes técnicos e limitações</summary>
             <ul className="mt-2 list-inside list-disc space-y-1">
               <li>
-                Esta verificação confirma apenas que o código existe na base deste sistema e foi
+                Esta verificação confirma apenas que o código existe no banco deste sistema e foi
                 associado aos metadados mostrados quando o médico gravou via portal.
               </li>
               <li>
@@ -167,7 +167,7 @@ function VerificarInner() {
                 forte.
               </li>
               <li>
-                API de consulta sem sessão{" "}
+                API de consulta sem sessão de login{" "}
                 <span className="font-mono">
                   GET {API_URL}/reports/laudos/verify/…
                 </span>
@@ -179,7 +179,7 @@ function VerificarInner() {
             href="/login"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-fit inline-flex")}
           >
-            Ir para iniciar sessão no portal
+            Ir para login no portal
           </Link>
         </CardContent>
       </Card>
@@ -192,7 +192,7 @@ export default function VerificarLaudoPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground px-4">
-          A preparar formulário…
+          Preparando formulário…
         </div>
       }
     >

@@ -10,13 +10,13 @@ import {
   Min,
 } from 'class-validator';
 
-/** Corpo PATCH — campos omitidos não alteram a base de dados. */
+/** Corpo PATCH — campos omitidos não alteram o banco de dados. */
 export class UpdateIntegrationPacsDto {
   @IsOptional()
   @IsBoolean()
   orthancUseTls?: boolean;
 
-  /** Sem propriedade = não muda; string vazia = apagar IP/host (voltar só ao .env). */
+  /** Sem propriedade = não muda; string vazia = remover IP/host (voltar só ao .env). */
   @IsOptional()
   @IsString()
   @MaxLength(512)
@@ -39,13 +39,13 @@ export class UpdateIntegrationPacsDto {
   })
   orthancDicomWebPath?: string;
 
-  /** Sem propriedade = não muda; string vazia = credencial em branco quando o modo BD está activo. */
+  /** Sem propriedade = não muda; string vazia = credencial em branco quando o modo banco está ativo. */
   @IsOptional()
   @IsString()
   @MaxLength(512)
   orthancUsername?: string;
 
-  /** Se definido e não vazio (após trim), define nova palavra-passe. */
+  /** Se definido e não vazio (após trim), define nova senha. */
   @IsOptional()
   @IsString()
   @MaxLength(500)
@@ -55,7 +55,7 @@ export class UpdateIntegrationPacsDto {
   @IsBoolean()
   clearStoredOrthancPassword?: boolean;
 
-  /** URL pública do portal (HTTPS). Vazio para apagar campo na BD e usar só WEB_ORIGIN. */
+  /** URL pública do portal (HTTPS). Vazio para remover o campo na BD e usar só WEB_ORIGIN. */
   @IsOptional()
   @IsString()
   @MaxLength(2048)
@@ -66,7 +66,7 @@ export class UpdateIntegrationPacsDto {
   @MaxLength(200)
   laudoManufacturer?: string;
 
-  /** Ex.: \"999\". Vazio para apagar campo na BD. */
+  /** Ex.: \"999\". Vazio para remover o campo na BD. */
   @IsOptional()
   @IsString()
   @MaxLength(16)

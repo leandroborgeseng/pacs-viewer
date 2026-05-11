@@ -67,7 +67,7 @@ export class DicomWebService implements OnModuleInit {
   }
 
   /**
-   * URL pública do DICOMweb vista pelo browser (proxy Next no portal).
+   * URL pública do DICOMweb vista pelo navegador (proxy Next no portal).
    * Sem isto, metadados Orthanc trazem http(s)://orthanc/... e o OHIF falha (CORS/CSP).
    */
   private browserPublicDicomwebRoot(): string | null {
@@ -158,7 +158,7 @@ export class DicomWebService implements OnModuleInit {
           contentType,
           hint:
             response.status === 401 || response.status === 403
-              ? 'Credenciais do PACS conferem-se em Administração → Integração (ou orthanc_* no .env).'
+              ? 'Configure as credenciais do PACS em Administração → Integração (ou orthanc_* no .env).'
               : 'Confirmar plugin DICOMweb, IP/porta e caminho até /dicom-web nas definições de integração.',
         });
       }

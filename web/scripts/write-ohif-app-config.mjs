@@ -183,4 +183,4 @@ const src = `/* gerado por scripts/write-ohif-app-config.mjs — não editar em 
 fs.mkdirSync(publicOhif, { recursive: true });
 fs.writeFileSync(configPath, src, "utf8");
 console.log("[ohif] app-config.js ->", configPath);
-console.log("[ohif] browser dicomRoot = <origin>/bb-api/dicomweb → proxy →", `${normalized}/dicomweb`);
+console.log("[ohif] navegador dicomRoot = <origin>/bb-api/dicomweb → proxy →", `${normalized}/dicomweb`);

@@ -19,7 +19,7 @@ function assertRequiredEnv() {
   }
   if (missing.length > 0) {
     console.error(
-      `[bootstrap] Variáveis em falta: ${missing.join(', ')}. O processo termina sem iniciar o servidor.`,
+      `[bootstrap] Variáveis ausentes: ${missing.join(', ')}. O processo termina sem iniciar o servidor.`,
     );
     if (missing.includes('JWT_SECRET')) {
       console.error(
@@ -124,7 +124,7 @@ async function bootstrap() {
   const integration = app.get(IntegrationService);
   const corsListed = integration.corsAllowedOrigins.join(' | ');
   console.log(
-    `[bootstrap] CORS efectivo (WEB_ORIGIN + Admin → Integração): ${corsListed || '(lista vazia)'}`,
+    `[bootstrap] CORS efetivo (WEB_ORIGIN + Admin → Integração): ${corsListed || '(lista vazia)'}`,
   );
   integration.logBootstrapSummary();
 
@@ -134,7 +134,7 @@ async function bootstrap() {
     /localhost|127\.0\.0\.1/i.test(rEffective.dicomWebRoot)
   ) {
     console.warn(
-      '[bootstrap] Aviso: URL DICOM/PACS efectivo aponta para localhost — o contentor cloud da API pode não alcançar esse host. Configure IP público/acessível em Administração → Integração (ou Orthanc nas variáveis do serviço).',
+      '[bootstrap] Aviso: URL DICOM/PACS efetivo aponta para localhost — o contêiner em nuvem da API pode não alcançar esse host. Configure IP público/acessível em Administração → Integração (ou Orthanc nas variáveis do serviço).',
     );
   }
 
@@ -155,16 +155,16 @@ async function bootstrap() {
     '  Railway — porta INTERNA a configurar',
     '========================================',
     `  process.env.PORT (bruto):  ${process.env.PORT ?? '<vazio — Nest usa 3000>'}`,
-    `  Nest está a ouvir em:      ${host}:${port}`,
+    `  Nest escuta em:              ${host}:${port}`,
     '',
     '  No serviço da API → Networking / Target →',
-    `  coloque este número:       ${port}`,
-    '  (Docker EXPOSE só documenta; o proxy liga a esta porta.)',
+    `  use este número:             ${port}`,
+    '  (Docker EXPOSE só documenta; o proxy conecta a esta porta.)',
     '========================================',
     '',
   ].join('\n');
   console.log(railwayPortHint);
-  console.log(`[bootstrap] API a ouvir em http://${host}:${port} (health: /health)`);
+  console.log(`[bootstrap] API em execução em http://${host}:${port} (health: /health)`);
 }
 
 bootstrap().catch((err) => {

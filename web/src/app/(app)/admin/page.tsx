@@ -130,7 +130,7 @@ export default function AdminPage() {
     to: "",
   });
 
-  /** Carrega cada separador sob demanda — evita bloquear o browser com /studies ou /permissions muito grandes. */
+  /** Carrega cada aba sob demanda — evita travar o navegador com /studies ou /permissions muito grandes. */
   useEffect(() => {
     if (adminTab !== "users" || users !== null) return;
     let cancelled = false;
@@ -139,7 +139,7 @@ export default function AdminPage() {
         const u = await apiFetch<UserRow[]>("/users");
         if (!cancelled) setUsers(u);
       } catch {
-        if (!cancelled) toast.error("Não foi possível carregar utilizadores");
+        if (!cancelled) toast.error("Não foi possível carregar usuários");
       }
     })();
     return () => {
@@ -301,7 +301,7 @@ export default function AdminPage() {
       if (r.ok) toast.success(r.message);
       else toast.error(r.message);
     } catch (err) {
-      toast.error(formatApiError(err, "Teste de ligação ao PACS falhou"));
+      toast.error(formatApiError(err, "Teste de conexão ao PACS falhou"));
     } finally {
       setTestingPacs(false);
     }
@@ -342,16 +342,16 @@ export default function AdminPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Administração</h1>
         <p className="text-muted-foreground">
-          Visão consolidada de utilizadores, pacientes, estudos, permissões e{" "}
+          Visão consolidada de usuários, pacientes, estudos, permissões e{" "}
           <strong className="font-medium text-foreground/85">auditoria de mutações REST</strong>.
-          A ligação ao PACS Orthanc e a URL pública do portal configuram-se em{" "}
+          A conexão com o PACS Orthanc e a URL pública do portal são configuradas em{" "}
           <strong className="font-medium text-foreground/85">Integração (PACS)</strong>.
-          O URL do laudo por estudo edita-se em Estudos.
+          O URL do laudo por estudo pode ser editado em Estudos.
         </p>
       </div>
       <Tabs value={adminTab} onValueChange={setAdminTab}>
         <TabsList className="flex flex-wrap">
-          <TabsTrigger value="users">Utilizadores</TabsTrigger>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
           <TabsTrigger value="patients">Pacientes</TabsTrigger>
           <TabsTrigger value="studies">Estudos</TabsTrigger>
           <TabsTrigger value="perms">Permissões</TabsTrigger>
@@ -367,14 +367,14 @@ export default function AdminPage() {
         <TabsContent value="users" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Utilizadores</CardTitle>
+              <CardTitle className="text-base">Usuários</CardTitle>
               <CardDescription>
                 POST <span className="font-mono text-xs">/api/users</span> (ADMIN)
               </CardDescription>
             </CardHeader>
             <CardContent>
               {!users ? (
-                <p className="text-sm text-muted-foreground">A carregar…</p>
+                <p className="text-sm text-muted-foreground">Carregando…</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -412,7 +412,7 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               {!patients ? (
-                <p className="text-sm text-muted-foreground">A carregar…</p>
+                <p className="text-sm text-muted-foreground">Carregando…</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -449,7 +449,7 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               {!studies ? (
-                <p className="text-sm text-muted-foreground">A carregar…</p>
+                <p className="text-sm text-muted-foreground">Carregando…</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -527,7 +527,7 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               {!perms ? (
-                <p className="text-sm text-muted-foreground">A carregar…</p>
+                <p className="text-sm text-muted-foreground">Carregando…</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -582,7 +582,7 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="bb-audit-user" className="text-xs">
-                    Utilizador (UUID)
+                    Usuário (UUID)
                   </Label>
                   <Input
                     id="bb-audit-user"
@@ -641,7 +641,7 @@ export default function AdminPage() {
               </div>
               {auditLoading ? (
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin" aria-hidden /> A carregar…
+                  <Loader2 className="size-4 animate-spin" aria-hidden /> Carregando…
                 </p>
               ) : !auditLogs ? (
                 <p className="text-sm text-muted-foreground">Sem dados.</p>
@@ -649,9 +649,9 @@ export default function AdminPage() {
                 <>
                   <p className="text-sm text-muted-foreground">
                     <span className="tabular-nums font-medium text-foreground">
-                      {auditLogs.total.toLocaleString("pt-PT")}
+                      {auditLogs.total.toLocaleString("pt-BR")}
                     </span>{" "}
-                    registo(s) · página{" "}
+                    registro(s) · página{" "}
                     <span className="tabular-nums">{auditLogs.page}</span> de{" "}
                     <span className="tabular-nums">
                       {Math.max(1, Math.ceil(auditLogs.total / auditLogs.pageSize))}
@@ -662,7 +662,7 @@ export default function AdminPage() {
                       <TableHeader>
                         <TableRow className="border-border/60 hover:bg-transparent">
                           <TableHead className="whitespace-nowrap">Data</TableHead>
-                          <TableHead>Utilizador</TableHead>
+                          <TableHead>Usuário</TableHead>
                           <TableHead className="min-w-[220px]">Acção</TableHead>
                           <TableHead className="min-w-[140px]">Recurso</TableHead>
                           <TableHead>IP</TableHead>
@@ -673,14 +673,14 @@ export default function AdminPage() {
                         {auditLogs.items.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground">
-                              Nenhum registo nesta página com estes filtros.
+                              Nenhum registro nesta página com estes filtros.
                             </TableCell>
                           </TableRow>
                         ) : (
                           auditLogs.items.map((row) => (
                             <TableRow key={row.id}>
                               <TableCell className="whitespace-nowrap font-mono text-[11px] tabular-nums">
-                                {new Date(row.createdAt).toLocaleString("pt-PT")}
+                                {new Date(row.createdAt).toLocaleString("pt-BR")}
                               </TableCell>
                               <TableCell className="text-sm">
                                 {row.user ? (
@@ -789,20 +789,20 @@ export default function AdminPage() {
                 Integração com o PACS (Orthanc)
                 {pacs ? (
                   <Badge variant="outline" className="font-normal">
-                    Valor usado pela API · {pacs.resolved.pacsConfiguredVia === "database" ? "campos na base de dados" : "só variáveis de ambiente"}
+                    Valor usado pela API · {pacs.resolved.pacsConfiguredVia === "database" ? "campos na banco de dados" : "só variáveis de ambiente"}
                   </Badge>
                 ) : null}
               </CardTitle>
               <CardDescription className="max-w-3xl space-y-2 text-sm leading-relaxed">
                 <span>
                   A API usa DICOMweb (QIDO) para a lista de exames e REST para ingestão —
-                  não é necessário configurar «worklist» DICOM clássico (MWL). Define aqui o
+                  não é necessário configurar "worklist" DICOM clássico (MWL). Define aqui o
                   <strong className="text-foreground/90"> host/IP e porta </strong>a que{" "}
                   <strong className="text-foreground/90">este servidor Nest</strong> consegue
                   ligar (em Docker/Railway use o nome do serviço ou IP interno da rede).
                 </span>
                 <span className="block">
-                  Campos em branco («host») fazem uso só das variáveis{" "}
+                  Campos em branco ("host") fazem uso só das variáveis{" "}
                   <span className="font-mono text-xs">ORTHANC_*</span> no ambiente. A URL
                   pública do portal é usada pelo OHIF (reescrita de links no JSON DICOM).
                 </span>
@@ -810,7 +810,7 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {!pacs ? (
-                <p className="text-sm text-muted-foreground">A carregar…</p>
+                <p className="text-sm text-muted-foreground">Carregando…</p>
               ) : (
                 <>
                   <div className="space-y-2 rounded-lg border border-border/70 bg-muted/15 p-4">
@@ -930,7 +930,7 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bb-pacs-user">Utilizador Orthanc (opcional)</Label>
+                      <Label htmlFor="bb-pacs-user">Usuário Orthanc (opcional)</Label>
                       <Input
                         id="bb-pacs-user"
                         value={pacsDraft.user}
@@ -944,7 +944,7 @@ export default function AdminPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bb-pacs-pwd">Nova palavra-passe (opcional)</Label>
+                      <Label htmlFor="bb-pacs-pwd">Nova senha (opcional)</Label>
                       <Input
                         id="bb-pacs-pwd"
                         type="password"
@@ -961,7 +961,7 @@ export default function AdminPage() {
                       />
                       {pacs.orthancPasswordStored ? (
                         <p className="text-[11px] text-muted-foreground">
-                          Existe palavra-passe na base de dados. Preencher acima substitui;
+                          Existe senha na banco de dados. Preencher acima substitui;
                           assinalar abaixo remove.
                         </p>
                       ) : null}
@@ -975,7 +975,7 @@ export default function AdminPage() {
                         onChange={(e) => setPacsClearPwd(e.target.checked)}
                         disabled={savingPacs}
                       />
-                      <span>Remover palavra-passe armazenada na base de dados</span>
+                      <span>Remover senha armazenada na banco de dados</span>
                     </label>
 
                     <div className="space-y-2 sm:col-span-2">
@@ -994,7 +994,7 @@ export default function AdminPage() {
                       <p className="text-[11px] text-muted-foreground">
                         Usada pelo proxy DICOM e somada ao{" "}
                         <span className="font-mono">WEB_ORIGIN</span> para CORS. Em produção
-                        prefira HTTPS; caso contrário o browser pode bloquear o OHIF.
+                        prefira HTTPS; caso contrário o navegador pode bloquear o OHIF.
                       </p>
                     </div>
 
@@ -1054,7 +1054,7 @@ export default function AdminPage() {
                       {testingPacs ? (
                         <Loader2 className="size-4 animate-spin" aria-hidden />
                       ) : null}
-                      Testar ligação (GET /system)
+                      Testar conexão (GET /system)
                     </Button>
                   </div>
                 </>
@@ -1070,7 +1070,7 @@ export default function AdminPage() {
             <SheetTitle>URL do resultado clínico (laudo)</SheetTitle>
             <SheetDescription>
               Estudo ligado ao paciente <strong>{reportEditor?.patientName}</strong>. Este
-              endereço abre ao utilizador autorizado na worklist («Ver resultado»). Use
+              endereço abre ao usuário autorizado na worklist ("Ver resultado"). Use
               HTTPS sempre que possível. Só pode indicar ou substituir por um novo URL válido —
               remover o laudo ou o estudo faz-se no PACS.
             </SheetDescription>

@@ -70,7 +70,7 @@ export class ReportsPdfService {
     const j = jwt?.trim();
     if (!j) {
       throw new ServiceUnavailableException(
-        'Segredo LAUDO_SEAL_SECRET ou JWT_SECRET em falta para selo dos laudos.',
+        'Segredo LAUDO_SEAL_SECRET ou JWT_SECRET ausente para selo dos laudos.',
       );
     }
     return j;
@@ -90,13 +90,13 @@ export class ReportsPdfService {
   async lookupLaudoSeal(verifyCodeRaw: string): Promise<ReportLaudoVerifyResponse> {
     const verifyCode = verifyCodeRaw.trim().toLowerCase().replace(/^0x/, '');
     if (!/^[a-f0-9]{32}$/.test(verifyCode)) {
-      throw new NotFoundException('Codigo de verificação inválido.');
+      throw new NotFoundException('Código de verificação inválido.');
     }
     const row = await this.prisma.reportLaudoSeal.findUnique({
       where: { verifyCode },
     });
     if (!row) {
-      throw new NotFoundException('Este codigo de verificação não foi encontrado.');
+      throw new NotFoundException('Este código de verificação não foi encontrado.');
     }
     const secret = this.sealSecret();
     const cryptoOk = verifyLaudoSealMac(
@@ -157,7 +157,7 @@ export class ReportsPdfService {
     const tags = await this.orthanc.getStudyClinicalTagsForLaudo(orthancIds[0]);
     const title =
       dto.title?.trim() ||
-      `Laudo (${new Date().toLocaleDateString('pt-PT')})`;
+      `Laudo (${new Date().toLocaleDateString('pt-BR')})`;
     const bodyRaw = dto.text.trim();
 
     const issuedAtIso = new Date().toISOString();
@@ -184,7 +184,7 @@ export class ReportsPdfService {
     const baseFooterLines = [
       `Gerado pelo portal institucional em ${issuedAtIso} | ${user.email}`,
       verificationUrl,
-      `Codigo verificacao (sem tracos): ${verifyCode}`,
+      `Código verificação (sem traços): ${verifyCode}`,
       `Corpo texto (digesto SHA-256): ${createHash('sha256').update(bodyPrinted, 'utf8').digest('hex').slice(0, 20)}…`,
       `Selo institucional (HMAC SHA-256, prefixo): ${seal.sealMacHex.slice(0, 24)}…`,
     ];

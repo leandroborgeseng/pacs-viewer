@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch {
       throw new Error(
-        `Sem ligação à API (${API_URL}). Confirme NEXT_PUBLIC_API_URL, HTTPS e CORS (WEB_ORIGIN na API).`,
+        `Sem conexão com a API (${API_URL}). Verifique NEXT_PUBLIC_API_URL, HTTPS e CORS (WEB_ORIGIN na API).`,
       );
     }
     if (!res.ok) {

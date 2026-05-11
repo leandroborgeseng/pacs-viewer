@@ -7,7 +7,7 @@ import { RequestUser } from '../common/decorators/current-user.decorator';
 @Injectable()
 export class DicomAccessService {
   private readonly allowlistCacheTtlMs: number;
-  /** Conjuntos de StudyInstanceUID permitidos ao utilizador (proxy OHIF faz muitos pedidos). */
+  /** Conjuntos de StudyInstanceUID permitidos ao usuário (proxy OHIF faz muitos pedidos). */
   private readonly allowlistCache = new Map<
     string,
     { expiresAt: number; uids: Set<string> }
@@ -23,7 +23,7 @@ export class DicomAccessService {
       Number.isFinite(n) && n >= 0 ? n : 25000;
   }
 
-  /** Após permissões ou estudos no portal alterarem RBAC para um utilizador. */
+  /** Após permissões ou estudos no portal alterarem RBAC para um usuário. */
   invalidateAllowlistCache(): void {
     this.allowlistCache.clear();
   }

@@ -1,6 +1,6 @@
 # Roadmap do produto (BlueBeaver / pacs-viewer)
 
-Referência rápida das fases seguintes após segurança básica (throttle login) e auditoria administrativa (`GET /api/audit/logs` + separador Admin).
+Referência rápida das fases seguintes após segurança básica (throttle login) e auditoria administrativa (`GET /api/audit/logs` + aba Admin).
 
 ## Concluído recentemente
 
@@ -13,9 +13,9 @@ Referência rápida das fases seguintes após segurança básica (throttle login
 
 ### 1. Worklist grande — servidor
 
-- **`GET /studies/me`** hoje pode carregar todos os estudos do Orthanc; com catálogo muito grande a API e o browser sofrem.
+- **`GET /studies/me`** hoje pode carregar todos os estudos do Orthanc; com catálogo muito grande a API e o navegador sofrem.
 - **Melhor**: QIDO Orthanc **com filtros** (Paciente/Data/Modalidades) + **paginação** onde o Orthanc suportar (`limit`) ou por janelas de data.
-- Consequência no web: filtros devem estar alinhados com o servidor (ou manter dois modos «offline» vs « servidor» até migração completa).
+- Consequência no web: filtros devem estar alinhados com o servidor (ou manter dois modos "offline" vs "servidor" até migração completa).
 
 ### 2. Brute force mais fino
 
@@ -30,11 +30,11 @@ Referência rápida das fases seguintes após segurança básica (throttle login
 ### 4. Exportação / retenção
 
 - CSV ou export tratado das linhas `audit_logs` (com período definido pela política institucional).
-- Job ou política de **purga**/arquivo de registos antigos.
+- Job ou política de **purga**/arquivo de registros antigos.
 
 ### 5. Gestão administrativa na UI
 
-- Formulários completos para criar/editar **utilizadores**, **pacientes**, **permissões** (hoje há leitura e algumas operações dispersas pela API manual).
+- Formulários completos para criar/editar **usuários**, **pacientes**, **permissões** (hoje há leitura e algumas operações dispersas pela API manual).
 
 ---
 

@@ -28,7 +28,7 @@ export function resolveJwtExpiresSec(
 }
 
 /**
- * Indica se o valor de env foi alterado pelo clamp (para aviso no arranque).
+ * Indica se o valor de env foi alterado pelo clamp (para aviso na inicialização).
  */
 export function jwtExpiresWasClamped(
   envVal: string | undefined | null,

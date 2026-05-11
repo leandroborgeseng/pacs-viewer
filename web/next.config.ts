@@ -47,9 +47,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   /**
-   * O OHIF é uma SPA: pedidos a /ohif/viewer não correspondem a ficheiro em disco.
+   * O OHIF é uma SPA: pedidos a /ohif/viewer não correspondem a arquivo em disco.
    * Sem isto o Next devolve 404 no iframe; encaminhamos para index.html.
-   * Ficheiros reais em /ohif/*.js etc. continuam a ser servidos a partir de public/.
+   * Arquivos estáticos em /ohif/*.js etc. continuam a ser servidos a partir de public/.
    */
   async rewrites() {
     const b = ohifSegment;

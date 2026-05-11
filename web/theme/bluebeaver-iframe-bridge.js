@@ -45,7 +45,7 @@
       return;
     }
     el.hidden = false;
-    var n = state.user.name || "Utilizador";
+    var n = state.user.name || "Usuário";
     var e = state.user.email || "";
     var r = state.user.role || "";
     el.innerHTML =
@@ -63,7 +63,7 @@
       esc(r) +
       "</span>" +
       "</div>" +
-      '<button type="button" class="bb-chrome-fechar" data-bb-fechar title="Fechar o leitor (sem terminar sessão no portal)">Fechar</button>' +
+      '<button type="button" class="bb-chrome-fechar" data-bb-fechar title="Fechar o leitor (sem encerrar a sessão no portal)">Fechar</button>' +
       "</div>";
     var btn = el.querySelector("[data-bb-fechar]");
     if (btn) {

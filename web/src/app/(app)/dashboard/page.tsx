@@ -63,7 +63,7 @@ export default function DashboardPage() {
 
   function formatCount(n: number | null): string {
     if (n == null) return "—";
-    return new Intl.NumberFormat("pt-PT").format(n);
+    return new Intl.NumberFormat("pt-BR").format(n);
   }
 
   return (
@@ -83,14 +83,14 @@ export default function DashboardPage() {
             <Link href="/exames" className="text-primary underline-offset-4 hover:underline">
               Exames
             </Link>
-            . Séries e instâncias só aparecem em soma quando o Orthanc expõe as contagens
-            nos metados de todos os estudos visíveis.
+            . Séries e instâncias só aparecem somadas quando o Orthanc expõe as contagens
+            nos metadados de todos os estudos visíveis.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <DashboardStatCard
             title="Estudos"
-            helper="Registos de estudo com acesso ao visualizador"
+            helper="Registros de estudo com acesso ao visualizador"
             value={
               summaryLoading ? null : summary ? formatCount(summary.studyCount) : "—"
             }
@@ -98,7 +98,7 @@ export default function DashboardPage() {
           />
           <DashboardStatCard
             title="Com laudo URL"
-            helper="Registados na base do portal para abrir relatório externo"
+            helper="Cadastrados no portal para abrir relatório externo"
             value={
               summaryLoading
                 ? null
@@ -110,7 +110,7 @@ export default function DashboardPage() {
           />
           <DashboardStatCard
             title="Doc. no PACS"
-            helper="Estudos com série DOC/OT ou modalidade equivalente nos metados (deteção DICOMweb)"
+            helper="Estudos com série DOC/OT ou modalidade equivalente nos metadados (detecção DICOMweb)"
             value={
               summaryLoading
                 ? null
@@ -170,7 +170,7 @@ export default function DashboardPage() {
         <Card className="border-border/80 bg-card/40 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-base">Perfil ativo</CardTitle>
-            <CardDescription>Controlo de acesso no servidor de aplicação</CardDescription>
+            <CardDescription>Controle de acesso no servidor de aplicação</CardDescription>
           </CardHeader>
           <CardContent>
             <Badge variant="secondary">{user?.role}</Badge>
@@ -181,7 +181,7 @@ export default function DashboardPage() {
             <CardTitle className="text-base">Exames</CardTitle>
             <CardDescription>
               {user?.role === "PACIENTE"
-                ? "Apenas os seus estudos registados no portal"
+                ? "Somente seus estudos cadastrados no portal"
                 : "Estudos autorizados ou catálogo completo (admin)"}
             </CardDescription>
           </CardHeader>
@@ -200,7 +200,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Auditoria</CardTitle>
             <CardDescription>
-              Registos de operações sensíveis na base de dados institucional
+              Registros de operações sensíveis no banco institucional
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -233,7 +233,7 @@ function DashboardStatCard(props: {
           <div
             className="h-9 max-w-[8rem] animate-pulse rounded-md bg-muted"
             aria-busy
-            aria-label="A carregar"
+            aria-label="Carregando"
           />
         ) : (
           <p className="text-3xl font-semibold tabular-nums tracking-tight">{value ?? "—"}</p>

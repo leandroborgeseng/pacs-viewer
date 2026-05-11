@@ -31,7 +31,7 @@ export type PacsAdminViewDto = {
   orthancPort: number;
   orthancDicomWebPath: string;
   orthancUsername: string | null;
-  /** True quando existe palavra-passe na BD (nunca devolvida ao cliente). */
+  /** Retorna verdadeiro quando existe senha no banco (nunca devolvida ao cliente). */
   orthancPasswordStored: boolean;
   webOriginPublic: string | null;
   laudoManufacturer: string | null;

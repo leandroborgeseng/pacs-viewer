@@ -11,7 +11,7 @@ export function getOhifBasePath(): string {
   return (process.env.NEXT_PUBLIC_OHIF_BASE_PATH ?? "/ohif").replace(/\/$/, "") || "/ohif";
 }
 
-/** URL absoluta do viewer DICOM (mesma origem que o portal). Por defeito **sem** JWT na query — proxy usa cookie `bb_dicom_proxy_session` + `localStorage.portal_token`. */
+/** URL absoluta do viewer DICOM (mesma origem que o portal). Por padrão **sem** JWT na query — proxy usa cookie `bb_dicom_proxy_session` + `localStorage.portal_token`. */
 export function buildOhifViewerAbsoluteUrl(
   studyUID: string,
   role: ApiUser["role"],
@@ -47,7 +47,7 @@ export function pushSessionToOhifWindow(win: Window, user: ApiUser | null): void
 
 /**
  * Abre o OHIF em nova janela no tamanho do ecrã disponível (leitura clínica).
- * Reutiliza o mesmo nome de janela para evitar dezenas de separadores.
+ * Reutiliza o mesmo nome de janela para evitar dezenas de abas abertas.
  */
 export function openOhifStudyWindow(studyUID: string, user: ApiUser): Window | null {
   if (typeof window === "undefined") return null;
@@ -89,7 +89,7 @@ export function openOhifStudyWindow(studyUID: string, user: ApiUser): Window | n
     win.moveTo(0, 0);
     win.resizeTo(w, h);
   } catch {
-    /* alguns browsers bloqueiam */
+    /* alguns navegadores bloqueiam */
   }
   try {
     win.focus();

@@ -20,7 +20,7 @@ export class AuthController {
   loginHint() {
     return {
       message:
-        'Use POST com Content-Type: application/json e corpo { "email", "password" }. Abrir esta URL no browser (GET) não faz login.',
+        'Use POST com Content-Type: application/json e corpo { "email", "password" }. Abrir esta URL no navegador (GET) não faz login.',
       method: 'POST',
       path: '/api/auth/login',
     };

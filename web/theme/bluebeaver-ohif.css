@@ -1,7 +1,7 @@
 /**
  * BlueBeaver — overrides visuais sobre o bundle OHIF v3 (`index.html` força `lang="pt-BR"` no inject).
  * Cores da marca: azul #0066B2, verde #2EB100 (acentos / sucesso).
- * Montserrat via ficheiros locais em ./fonts/ (sem Google Fonts — CSP friendly).
+ * Montserrat via arquivos locais em ./fonts/ (sem Google Fonts — compatível com CSP).
  */
 @font-face {
   font-family: "Montserrat Variable";
@@ -273,7 +273,7 @@ select {
 
 /* ── Marca visual adicional sobre o tema OHIF (Cornerstone).
    Preserve as obrigações de licenciamento OSS (OHIF/MPL) na documentação
-   institucional; aqui apenas reduzimos a “cara pré-definida” ao utilizador final. ── */
+   institucional; aqui apenas reduzimos a "cara pré-definida" ao usuário final. ── */
 
 /* Miniaturas e painéis com moldura institucional */
 .ohif-scrollbar img,

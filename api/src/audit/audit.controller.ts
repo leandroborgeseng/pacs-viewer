@@ -5,7 +5,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { AuditLogQueryDto } from './dto/audit-log-query.dto';
 import { AuditService } from './audit.service';
 
-/** Operações sensíveis (mutações REST) já são registadas pelo `AuditInterceptor`, exceto login e `/dicomweb`. */
+/** Operações sensíveis (mutações REST) já são registradas pelo `AuditInterceptor`, exceto login e `/dicomweb`. */
 @Controller('audit')
 @UseGuards(RolesGuard)
 @Roles(Role.ADMIN)

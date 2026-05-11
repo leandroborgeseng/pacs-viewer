@@ -57,7 +57,7 @@ export default function LoginPage() {
       } catch {
         /* ignore */
       }
-      toast.success("Sessão iniciada");
+      toast.success("Login realizado com sucesso");
       router.replace("/dashboard");
     } catch (err) {
       const msg =
@@ -108,7 +108,7 @@ export default function LoginPage() {
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-lg text-white">Entrar</CardTitle>
               <CardDescription className="text-[#9CA3AF]">
-                Autenticação institucional · ligação encriptada
+                Autenticação institucional · conexão criptografada
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -127,13 +127,13 @@ export default function LoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       className="h-11 border-[#1F2937] bg-[#0B1120]/90 pl-10 text-[#E5E7EB] placeholder:text-[#6B7280] focus-visible:border-[#0066B2] focus-visible:ring-[#2EB100]/25"
-                      placeholder="nome@instituicao.pt"
+                      placeholder="nome@sua-instituicao.com"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-[#E5E7EB]">
-                    Palavra-passe
+                    Senha
                   </Label>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9CA3AF]" />
@@ -156,7 +156,7 @@ export default function LoginPage() {
                     onChange={(e) => setRemember(e.target.checked)}
                     className="size-4 rounded border-[#1F2937] bg-[#0B1120] text-[#2EB100] focus:ring-[#2EB100]/35"
                   />
-                  Lembrar utilizador neste dispositivo
+                  Lembrar meu usuário neste dispositivo
                 </label>
                 <Button
                   type="submit"
@@ -166,7 +166,7 @@ export default function LoginPage() {
                   {busy ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      A validar…
+                      Validando…
                     </>
                   ) : (
                     "Continuar"

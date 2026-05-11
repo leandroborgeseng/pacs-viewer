@@ -1,7 +1,7 @@
 /**
- * @deprecated Legado (contentor OHIF separado). Em produção o OHIF é compilado
+ * @deprecated Legado (contêiner OHIF separado). Em produção o OHIF é compilado
  * dentro da imagem Docker do Next (`web/Dockerfile`) e servido em /ohif;
- * o ficheiro efetivo é gerado por web/scripts/write-ohif-app-config.mjs no build.
+ * o arquivo efetivo é gerado por web/scripts/write-ohif-app-config.mjs no build.
  *
  * -----------------------------------------------------------------------------
  * Configuração OHIF v3 — aponte os roots DICOMweb para o **backend** Nest (proxy).
@@ -20,7 +20,7 @@ window.config = {
       configuration: {
         friendlyName: 'Portal (proxy seguro)',
         name: 'dicomweb',
-        // Troque se o browser não conseguir alcançar localhost (ex.: outro host na rede)
+        // Troque se o navegador não conseguir alcançar localhost (ex.: outro host na rede)
         wadoUriRoot: 'http://localhost:3001/api/dicomweb',
         qidoRoot: 'http://localhost:3001/api/dicomweb',
         wadoRoot: 'http://localhost:3001/api/dicomweb',

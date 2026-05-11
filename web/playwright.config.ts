@@ -1,10 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Validação fim-a-fim contra stack local (recomendado: `docker compose up --build`).
+ * Testes ponta a ponta contra a stack local (recomendado: `docker compose up --build` na raiz).
  *
  * Variáveis:
- * - `PLAYWRIGHT_BASE_URL` — portal (default http://localhost:3000)
+ * - `PLAYWRIGHT_BASE_URL` — URL do portal (padrão: http://localhost:3000).
  */
 export default defineConfig({
   testDir: "./e2e",

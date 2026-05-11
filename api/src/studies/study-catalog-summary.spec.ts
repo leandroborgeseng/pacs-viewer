@@ -49,7 +49,7 @@ describe('buildStudyCatalogSummary', () => {
     expect(s.totalInstances).toBeNull();
   });
 
-  it('conta estudos com laudo URL registado no portal', () => {
+  it('conta estudos com laudo URL cadastrado no portal', () => {
     const s = buildStudyCatalogSummary([
       row({ studyInstanceUID: '1', reportUrl: 'https://report/a' }),
       row({ studyInstanceUID: '2', reportUrl: '   ' }),

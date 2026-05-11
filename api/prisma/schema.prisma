@@ -92,7 +92,7 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-/// Configuração única da ligação ao PACS / portal público (UI admin). Fallback: variáveis de ambiente.
+/// Configuração única da conexão com o PACS / URL pública do portal (UI admin). Fallback: variáveis de ambiente.
 model IntegrationSettings {
   id                  String   @id @default("default")
   orthancUseTls       Boolean  @default(false) @map("orthanc_use_tls")

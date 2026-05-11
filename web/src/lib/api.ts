@@ -72,7 +72,7 @@ export function formatApiError(err: unknown, fallback: string): string {
     const m = b?.message;
     if (typeof m === "string" && m.trim()) return m.trim();
     if (Array.isArray(m) && m.length > 0) return m.filter(Boolean).join("; ");
-    if (err.status === 401) return "Sessão expirada ou inválida. Inicie sessão novamente.";
+    if (err.status === 401) return "Sessão expirada ou inválida. Faça login novamente.";
     if (err.status === 403) return "Sem permissão para este recurso.";
     if (err.status === 503 || err.status === 502)
       return "Serviço ou PACS temporariamente indisponível. Tente de novo ou verifique os logs da API.";

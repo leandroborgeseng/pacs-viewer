@@ -20,7 +20,7 @@ export default function AppAreaLayout({
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        A carregar sessão segura…
+        Carregando sessão segura…
       </div>
     );
   }

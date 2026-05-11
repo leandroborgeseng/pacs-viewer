@@ -19,7 +19,7 @@ export function ConnectionPill({ className }: Props) {
           : "border-amber-500/30 bg-amber-500/10 text-amber-300",
         className,
       )}
-      title={online ? "Ligação de rede activa" : "Sem ligação de rede"}
+      title={online ? "Rede conectada" : "Sem conexão de rede"}
     >
       {online ? <Wifi className="size-3.5" aria-hidden /> : <WifiOff className="size-3.5" aria-hidden />}
       {online ? "Online" : "Offline"}

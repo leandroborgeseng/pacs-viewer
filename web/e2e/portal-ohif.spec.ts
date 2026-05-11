@@ -1,15 +1,16 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Requer API + Web + Postgres + Orthanc (ex.: `docker compose up --build` na raiz do monorepo).
- * O estudo seed (`1.2.3.4...`) pode não existir no Orthanc; o teste valida sobretudo
- * login → lista → abertura do OHIF → pelo menos um pedido GET ao proxy DICOMweb sem erro 5xx.
+ * Executa contra a stack completa (API + Web + Postgres; Orthanc conforme README).
+ * Ex.: na raiz do monorepo: `docker compose up --build`.
+ * O estudo configurado no seed pode não existir no PACS remoto — o cenário garante mesmo assim
+ * login → lista → abertura do OHIF → pelo menos uma resposta GET/HEAD ao proxy DICOMweb sem 5xx.
  */
 test.describe("Portal BlueBeaver", () => {
   test("login → exames → OHIF dispara pedidos ao /api/dicomweb", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("E-mail").fill("medico@portal.local");
-    await page.getByLabel("Palavra-passe").fill("Medico123!");
+    await page.getByLabel("Senha").fill("Medico123!");
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
 
@@ -55,7 +56,7 @@ test.describe("Portal BlueBeaver", () => {
 
     await page.goto("/login");
     await page.getByLabel("E-mail").fill("admin@portal.local");
-    await page.getByLabel("Palavra-passe").fill("Admin123!");
+    await page.getByLabel("Senha").fill("Admin123!");
     await page.getByRole("button", { name: "Continuar" }).click();
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
 

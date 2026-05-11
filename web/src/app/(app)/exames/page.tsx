@@ -133,7 +133,7 @@ export default function ExamesPage() {
         if (p) set.add(p);
       }
     }
-    return [...set].sort((a, b) => a.localeCompare(b, "pt"));
+    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [rows]);
 
   const dateFromN = dateFrom ? studyDateToComparable(dateFrom.replace(/-/g, "")) : null;
@@ -180,13 +180,13 @@ export default function ExamesPage() {
 
   function handleOpenStudy(studyInstanceUID: string) {
     if (!user) {
-      toast.error("Sessão inválida. Volte a iniciar sessão.");
+      toast.error("Sessão inválida. Faça login novamente.");
       return;
     }
     const win = openOhifStudyWindow(studyInstanceUID, user);
     if (!win) {
       toast.error(
-        "O browser bloqueou a nova janela. Permita pop-ups ou use «Mais» → «Abrir link OHIF» se disponível.",
+        "O navegador bloqueou a nova janela. Permita pop-ups ou use o menu \"Mais\" → \"Abrir link OHIF\", se disponível.",
       );
     }
   }
@@ -196,13 +196,13 @@ export default function ExamesPage() {
       await navigator.clipboard.writeText(uid);
       toast.success("UID copiado para a área de transferência.");
     } catch {
-      toast.error("Não foi possível copiar (permissões do browser).");
+      toast.error("Não foi possível copiar (permissões do navegador).");
     }
   }
 
   async function submitPdfLaudoToPacs() {
     if (!token) {
-      toast.error("Sessão inválida. Volte a iniciar sessão.");
+      toast.error("Sessão inválida. Faça login novamente.");
       return;
     }
     const uid = pdfLaudoSheet.studyInstanceUID;
@@ -295,7 +295,7 @@ export default function ExamesPage() {
                     setFilterPatient(e.target.value);
                     setPageIndex(0);
                   }}
-                  placeholder="Nome, número de utente ou Study UID…"
+                  placeholder="Nome, prontuário ou Study UID…"
                   className="h-10 border-border/80 bg-background/80 pl-9"
                   autoComplete="off"
                 />
@@ -379,7 +379,7 @@ export default function ExamesPage() {
           {rows === null ? (
             <>
               <p className="text-sm text-muted-foreground sr-only">
-                A carregar lista de exames…
+                Carregando lista de exames…
               </p>
               <WorklistSkeleton />
             </>
@@ -388,7 +388,7 @@ export default function ExamesPage() {
               <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <span aria-live="polite">
                   <strong className="text-foreground/90">{filtered?.length ?? 0}</strong>{" "}
-                  {filtered?.length === 1 ? "registo visível" : "registos visíveis"}
+                  {filtered?.length === 1 ? "registro visível" : "registros visíveis"}
                   {rows.length > 0 && filtered!.length !== rows.length && (
                     <span className="text-muted-foreground"> ({rows.length} no total)</span>
                   )}
@@ -450,7 +450,7 @@ export default function ExamesPage() {
               {filtered!.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                   {rows.length === 0
-                    ? "Sem estudos visíveis para este utilizador."
+                    ? "Nenhum estudo visível para este usuário."
                     : "Nenhum resultado com estes filtros. Ajuste os critérios ou limpe-os."}
                 </p>
               ) : (
@@ -629,7 +629,7 @@ export default function ExamesPage() {
                                       className="gap-2"
                                     >
                                       <ExternalLink className="size-3.5" aria-hidden />
-                                      Laudo noutro separador
+                                      Laudo em outra aba
                                     </DropdownMenuItem>
                                   </>
                                 ) : null}
@@ -672,7 +672,7 @@ export default function ExamesPage() {
               <span className="font-medium text-foreground/90">
                 {pdfLaudoSheet.patientLabel || "—"}
               </span>
-              . Confirme sempre o paciente antes de gravar.
+              . Verifique sempre o paciente antes de gravar.
             </SheetDescription>
           </SheetHeader>
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2">
@@ -733,7 +733,7 @@ export default function ExamesPage() {
               {pdfLaudoSheet.saving ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
-                  A gravar…
+                  Salvando…
                 </>
               ) : (
                 "Gravar no PACS"
@@ -752,7 +752,7 @@ export default function ExamesPage() {
             <SheetTitle>{laudo.title}</SheetTitle>
             <SheetDescription>
               Resultado clínico ou PDF externo (URL configurada na base do portal). Se o conteúdo
-              não carregar por política do site de origem, use «Abrir noutro separador».
+              não carregar por política do site de origem, use "Abrir em outra aba".
             </SheetDescription>
           </SheetHeader>
           {laudo.url ? (
@@ -767,7 +767,7 @@ export default function ExamesPage() {
                 )}
               >
                 <ExternalLink className="size-4" aria-hidden />
-                Abrir noutro separador
+                Abrir em outra aba
               </a>
               <iframe
                 title="Laudo"

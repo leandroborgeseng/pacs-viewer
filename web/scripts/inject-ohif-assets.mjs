@@ -40,7 +40,7 @@ for (const [src, dest, label] of [
 let html = fs.readFileSync(indexPath, "utf8");
 let changed = false;
 
-/** Localização do viewer OHIF para leitores de ecrã e tipografia. */
+/** Posicionamento do viewer OHIF para leitores de tela e tipografia. */
 if (/<html[^>]*>/i.test(html)) {
   html = html.replace(/<html(\s[^>]*?)>/i, (_, attrs) => {
     const stripped = attrs
@@ -97,5 +97,5 @@ if (changed) {
   fs.writeFileSync(indexPath, html, "utf8");
   console.log("[bluebeaver-ohif] inject atualizado em public/ohif/index.html");
 } else {
-  console.log("[bluebeaver-ohif] inject completo. Ficheiros copiados.");
+  console.log("[bluebeaver-ohif] inject completo. Arquivos copiados.");
 }

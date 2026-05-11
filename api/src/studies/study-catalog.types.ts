@@ -4,15 +4,15 @@ export type StudyCatalogRow = {
   studyDescription: string | null;
   studyDate: string | null;
   modality: string | null;
-  /** Contagem quando o PACS inclui nos metados QIDO; senão null. */
+  /** Contagem quando o PACS inclui nos metadados QIDO; senão null. */
   seriesCount: number | null;
-  /** Contagem quando o PACS inclui nos metados QIDO; senão null. */
+  /** Contagem quando o PACS inclui nos metadados QIDO; senão null. */
   instanceCount: number | null;
-  /** URL opcional registada na BD (laudo PDF/página externa autenticada). */
+  /** URL opcional registrada no banco (laudo PDF/página externa autenticada). */
   reportUrl: string | null;
   /**
    * Indício no PACS: série DOC/OT (QIDO `/series`) ou ModalitiesInStudy agregado configurável.
-   * O documento visualiza‑se tipicamente no OHIF dentro do mesmo estudo.
+   * O documento costuma ser exibido no OHIF dentro do mesmo estudo.
    */
   hasPacsDocumentLaudo: boolean;
   patient: {

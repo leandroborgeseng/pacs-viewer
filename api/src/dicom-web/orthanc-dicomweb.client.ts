@@ -128,7 +128,7 @@ export class OrthancDicomWebClient {
           }),
         );
         throw new ServiceUnavailableException(
-          'Resposta do PACS em /studies não é uma lista DICOM JSON. Confirme que o URL aponta para …/dicom-web.',
+          'Resposta do PACS em /studies não é uma lista DICOM JSON. Verifique se o URL aponta para …/dicom-web.',
         );
       }
       return data;
@@ -147,7 +147,7 @@ export class OrthancDicomWebClient {
         const code = e.code;
         const hint =
           code === 'ECONNREFUSED'
-            ? 'ligação recusada (porta, firewall ou PACS desligado).'
+            ? 'conexão recusada (porta, firewall ou PACS desligado).'
             : code === 'ETIMEDOUT' || code === 'ECONNABORTED'
               ? 'timeout ao contactar o PACS.'
               : code === 'ENOTFOUND'
@@ -156,7 +156,7 @@ export class OrthancDicomWebClient {
                   ? 'falha TLS ao contactar o PACS (certificado).'
                   : `erro de rede (${code ?? 'desconhecido'}).`;
         throw new ServiceUnavailableException(
-          `PACS indisponível: ${hint} Na Railway/cloud, defina ORTHANC_DICOMWEB_ROOT com URL acessível **a partir do servidor da API** (não use localhost do teu PC).`,
+          `PACS indisponível: ${hint} Na Railway/cloud, defina ORTHANC_DICOMWEB_ROOT com URL acessível **a partir do servidor da API** (não use o localhost da sua máquina).`,
         );
       }
       this.logger.error(

@@ -69,7 +69,7 @@ export class OrthancRestClient {
       );
       if (resp.status !== 200) {
         throw new ServiceUnavailableException(
-          `PACS (/tools/find) respondeu HTTP ${resp.status}. Confirme ORTHANC_HTTP_ROOT e credenciais.`,
+          `PACS (/tools/find) respondeu HTTP ${resp.status}. Verifique ORTHANC_HTTP_ROOT e credenciais.`,
         );
       }
       const rows = resp.data;
@@ -89,7 +89,7 @@ export class OrthancRestClient {
           message: e.message,
         }));
         throw new ServiceUnavailableException(
-          'Sem ligação ao PACS (REST Orthanc). Verifique ORTHANC_HTTP_ROOT / rede.',
+          'Sem conexão com o PACS (REST Orthanc). Verifique ORTHANC_HTTP_ROOT e a rede.',
         );
       }
       throw e;
@@ -258,7 +258,7 @@ export class OrthancRestClient {
       if (e instanceof ServiceUnavailableException) throw e;
       if (isAxiosError(e)) {
         throw new ServiceUnavailableException(
-          'Sem ligação ao Orthanc durante upload DICOM.',
+          'Sem conexão com o Orthanc durante upload DICOM.',
         );
       }
       throw e;

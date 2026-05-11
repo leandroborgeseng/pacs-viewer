@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 /**
- * Estado de rede do browser (online/offline). Não substitui verificação de API.
+ * Estado de rede do navegador (online/offline). Não substitui verificação da API.
  */
 export function useOnlineStatus(): boolean {
   const [online, setOnline] = useState(

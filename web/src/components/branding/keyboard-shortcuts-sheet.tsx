@@ -14,13 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 
 const PORTAL_ROWS: { action: string; key: string }[] = [
-  { action: "Navegar no portal", key: "Rato / teclado padrão" },
+  { action: "Navegar no portal", key: "Mouse ou teclado padrão" },
   { action: "Alternar tema claro/escuro", key: "Ícone lua/sol (topo)" },
   { action: "Abrir visualizador DICOM", key: "Exames → Abrir estudo" },
 ];
 
 const VIEWER_NOTE =
-  "No visualizador DICOM (janela dedicada), os atalhos seguem a configuração OHIF: preferências no menu de definições (ícone de engrenagem) dentro do viewer.";
+  "No visualizador DICOM (janela dedicada), os atalhos seguem a configuração do OHIF: preferências no menu de configurações (ícone de engrenagem) dentro do viewer.";
 
 export function KeyboardShortcutsSheet() {
   return (
@@ -48,7 +48,7 @@ export function KeyboardShortcutsSheet() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Acção</TableHead>
+                <TableHead>Ação</TableHead>
                 <TableHead className="text-right">Como</TableHead>
               </TableRow>
             </TableHeader>

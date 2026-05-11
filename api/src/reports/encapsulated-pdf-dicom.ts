@@ -1,6 +1,6 @@
 import type { OrthancStudyTags } from '../dicom-web/orthanc-rest.client';
 
-/** Objecto «naturalizado» esperado pelo dcmjs antes de gravar Encapsulated PDF Storage. */
+/** Objeto “naturalizado” esperado pelo dcmjs antes de gravar Encapsulated PDF Storage. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type NaturalEncapsulatedPdfDataset = Record<string, any>;
 

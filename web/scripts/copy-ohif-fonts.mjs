@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Copia ficheiros woff2 do @fontsource-variable/montserrat para public/ohif/fonts/
+ * Copia arquivos woff2 do @fontsource-variable/montserrat para public/ohif/fonts/
  * (sem pedidos a fonts.googleapis.com no viewer OHIF).
  */
 import fs from "fs";
@@ -27,7 +27,7 @@ const FILES = [
 export function copyOhifFonts() {
   if (!fs.existsSync(pkgFonts)) {
     console.warn(
-      "[ohif-fonts] node_modules/@fontsource-variable/montserrat em falta — corra npm ci na pasta web.",
+      "[ohif-fonts] node_modules/@fontsource-variable/montserrat ausente — execute npm ci na pasta web.",
     );
     return false;
   }
@@ -39,7 +39,7 @@ export function copyOhifFonts() {
   for (const f of FILES) {
     const src = path.join(pkgFonts, f);
     if (!fs.existsSync(src)) {
-      console.warn("[ohif-fonts] em falta:", f);
+      console.warn("[ohif-fonts] arquivo ausente:", f);
       continue;
     }
     fs.copyFileSync(src, path.join(destDir, f));

@@ -1,5 +1,5 @@
-# Stack local: API + Web + Postgres. PACS Orthanc remoto (teste antes de produção).
-# Ver README para variáveis de produção.
+# Pilha local: API + Web + Postgres. Este compose usa Orthanc/PACS remoto (valide antes de produção).
+# Variáveis e deploy — consulte o README na raiz do repositório.
 
 services:
   db:
@@ -36,9 +36,9 @@ services:
       JWT_SECRET: dev-change-this-to-a-long-random-string
       JWT_EXPIRES_SEC: "28800"
       WEB_ORIGIN: http://localhost:3000
-      # Orthanc remoto (AE AIONPACS / DICOM 4242) — DICOMweb HTTP na porta 8042
+      # Orthanc remoto (AE AIONPACS / DICOM na 4242) — DICOMweb via HTTP na porta 8042
       ORTHANC_DICOMWEB_ROOT: http://189.90.139.222:8042/dicom-web
-      # Alinha o seed com um estudo existente no PACS (ajuste ou vazio para o default do seed)
+      # Alinhe ao seed um estudo existente no PACS (ajuste o UID ou remova para o valor padrão do seed)
       SEED_STUDY_INSTANCE_UID: "1.2.276.0.7230010.3.1.2.0.29108.1775763951.440112"
     ports:
       - "3001:3000"

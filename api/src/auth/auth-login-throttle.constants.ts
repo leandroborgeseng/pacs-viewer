@@ -1,6 +1,6 @@
 /**
  * Limitação de fluxo própria do login (REST `POST …/auth/login`), mais estrita que o throttler global.
- * Variáveis lidas no arranque do processo (ConfigService não corre em tempo de decorator).
+ * Variáveis lidas na inicialização do processo (ConfigService não executa em tempo de decorator).
  */
 
 export function resolvedLoginThrottleLimit(): number {

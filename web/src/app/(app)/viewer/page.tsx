@@ -22,7 +22,7 @@ export default function ViewerPage() {
   return (
     <Suspense
       fallback={
-        <p className="text-sm text-muted-foreground">A carregar…</p>
+        <p className="text-sm text-muted-foreground">Carregando…</p>
       }
     >
       <ViewerInner />
@@ -48,7 +48,7 @@ function ViewerInner() {
 
   function handleOpenWindow() {
     if (!studyUID || !token || !user) {
-      toast.error("Dados de sessão em falta.");
+      toast.error("Faltam dados de sessão.");
       return;
     }
     const win = openOhifStudyWindow(studyUID, user);
@@ -57,7 +57,7 @@ function ViewerInner() {
         "Pop-up bloqueado. Permita janelas para este site ou abra o link manualmente abaixo.",
       );
     } else {
-      toast.success("Visualizador aberto noutra janela.");
+      toast.success("Visualizador aberto em outra janela.");
     }
   }
 
@@ -67,18 +67,18 @@ function ViewerInner() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Visualizador clínico</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Por defeito o estudo abre numa{" "}
-            <strong className="text-foreground/90">janela própria</strong> para leitura a ecrã
-            completo. O tráfego ao PACS passa pelo proxy do portal; a sessão usa cookie httpOnly e o
+            Por padrão o estudo abre em uma{" "}
+            <strong className="text-foreground/90">janela própria</strong> para leitura em tela
+            cheia. O tráfego ao PACS passa pelo proxy do portal; a sessão usa cookie httpOnly e o
             armazenamento local no mesmo domínio.{" "}
             {OHIF_INCLUDE_TOKEN_IN_QUERY ? (
               <>
-                O JWT na query do OHIF está <strong>activo</strong> (
+                O JWT na URL do OHIF está <strong>ativo</strong> (
                 <code className="text-xs">NEXT_PUBLIC_OHIF_TOKEN_IN_QUERY</code>) para compatibilidade
                 excepcional.
               </>
             ) : (
-              <>Por defeito o JWT não é colocado na barra de endereços do viewer.</>
+              <>Por padrão o JWT não é colocado na barra de endereços do visualizador.</>
             )}
           </p>
         </div>
@@ -99,7 +99,7 @@ function ViewerInner() {
       {!studyUID && (
         <Card className="border-border/80 bg-card/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-base">Parâmetro em falta</CardTitle>
+            <CardTitle className="text-base">Parâmetro ausente</CardTitle>
             <CardDescription>
               <Link href="/exames" className="text-primary underline-offset-4 hover:underline">
                 Vá à lista de exames
@@ -115,7 +115,7 @@ function ViewerInner() {
           <CardHeader>
             <CardTitle className="text-base">Abrir leitura</CardTitle>
             <CardDescription>
-              Utilize o botão para abrir ou reabrir a janela do visualizador. Se o browser pedir,
+              Utilize o botão para abrir ou reabrir a janela do visualizador. Se o navegador pedir,
               autorize pop-ups para este domínio.
             </CardDescription>
           </CardHeader>
@@ -128,7 +128,7 @@ function ViewerInner() {
               onClick={handleOpenWindow}
             >
               <ExternalLink className="size-4" aria-hidden />
-              Abrir em janela (ecrã completo)
+              Abrir em janela (tela cheia)
             </Button>
             <Link
               href="/exames"
@@ -139,7 +139,7 @@ function ViewerInner() {
             {absoluteUrl ? (
               <div className="w-full min-w-0 sm:w-full">
                 <p className="mb-1 text-xs text-muted-foreground">
-                  Link directo (se o pop-up falhar, copie ou abra num novo separador):
+                  Link direto (se o pop-up falhar, copie ou abra numa nova aba):
                 </p>
                 <code className="block max-h-24 overflow-auto rounded-md border border-border/80 bg-background/80 p-2 text-[10px] leading-snug break-all text-muted-foreground">
                   {absoluteUrl}

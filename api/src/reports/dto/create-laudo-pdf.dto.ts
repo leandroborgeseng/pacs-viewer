@@ -8,6 +8,6 @@ export class CreateLaudoPdfDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(200, { message: 'Título demasiado longo.' })
+  @MaxLength(200, { message: 'Título muito longo.' })
   title?: string;
 }

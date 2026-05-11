@@ -21,7 +21,7 @@ export class IntegrationController {
     return this.integration.applyPatch(dto);
   }
 
-  /** Testa Orthanc REST `GET /system` com a mesma URL e credencial efectiva da API. */
+  /** Testa Orthanc REST `GET /system` com a mesma URL e credencial efetiva da API. */
   @Post('pacs/test')
   testPacs() {
     return this.integration.testOrthancConnectivity();
