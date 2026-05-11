@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { PencilIcon, Loader2 } from "lucide-react";
-import { apiFetch, formatApiError } from "@/lib/api";
+import { PencilIcon, Loader2, Globe } from "lucide-react";
+import { apiFetch, formatApiError, type IntegrationPacsAdminDto, type IntegrationPacsTestResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -70,6 +71,18 @@ type ReportEditorState = {
   draftUrl: string;
 };
 
+type PacsFormDraft = {
+  tls: boolean;
+  host: string;
+  port: number;
+  dicomPath: string;
+  user: string;
+  webOrigin: string;
+  laudoMfr: string;
+  laudoSeries: string;
+  proxyDebug: boolean;
+};
+
 export default function AdminPage() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [patients, setPatients] = useState<PatientRow[] | null>(null);
@@ -77,6 +90,22 @@ export default function AdminPage() {
   const [perms, setPerms] = useState<PermissionRow[] | null>(null);
   const [reportEditor, setReportEditor] = useState<ReportEditorState | null>(null);
   const [savingReportUrl, setSavingReportUrl] = useState(false);
+  const [pacs, setPacs] = useState<IntegrationPacsAdminDto | null>(null);
+  const [pacsDraft, setPacsDraft] = useState<PacsFormDraft>({
+    tls: false,
+    host: "",
+    port: 8042,
+    dicomPath: "/dicom-web",
+    user: "",
+    webOrigin: "",
+    laudoMfr: "",
+    laudoSeries: "",
+    proxyDebug: false,
+  });
+  const [pacsPwdNew, setPacsPwdNew] = useState("");
+  const [pacsClearPwd, setPacsClearPwd] = useState(false);
+  const [savingPacs, setSavingPacs] = useState(false);
+  const [testingPacs, setTestingPacs] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -96,6 +125,79 @@ export default function AdminPage() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const data = await apiFetch<IntegrationPacsAdminDto>("/integration/pacs");
+        setPacs(data);
+      } catch (err) {
+        toast.error(formatApiError(err, "Não foi possível carregar a integração com o PACS"));
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!pacs) return;
+    setPacsDraft({
+      tls: pacs.orthancUseTls,
+      host: pacs.orthancHost ?? "",
+      port: pacs.orthancPort,
+      dicomPath: pacs.orthancDicomWebPath || "/dicom-web",
+      user: pacs.orthancUsername ?? "",
+      webOrigin: pacs.webOriginPublic ?? "",
+      laudoMfr: pacs.laudoManufacturer ?? "",
+      laudoSeries: pacs.laudoSeriesNumber ?? "",
+      proxyDebug: pacs.dicomProxyDebug,
+    });
+    setPacsPwdNew("");
+    setPacsClearPwd(false);
+  }, [pacs]);
+
+  async function savePacsConfig() {
+    setSavingPacs(true);
+    try {
+      const body: Record<string, unknown> = {
+        orthancUseTls: pacsDraft.tls,
+        orthancHost: pacsDraft.host.trim(),
+        orthancPort: pacsDraft.port,
+        orthancDicomWebPath: pacsDraft.dicomPath.trim() || "/dicom-web",
+        orthancUsername: pacsDraft.user.trim(),
+        webOriginPublic: pacsDraft.webOrigin.trim(),
+        laudoManufacturer: pacsDraft.laudoMfr.trim(),
+        laudoSeriesNumber: pacsDraft.laudoSeries.trim(),
+        dicomProxyDebug: pacsDraft.proxyDebug,
+        clearStoredOrthancPassword: pacsClearPwd || undefined,
+      };
+      const pw = pacsPwdNew.trim();
+      if (pw.length > 0) body.orthancPasswordNew = pw;
+      const next = await apiFetch<IntegrationPacsAdminDto>("/integration/pacs", {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      setPacs(next);
+      toast.success("Integração gravada.");
+    } catch (err) {
+      toast.error(formatApiError(err, "Não foi possível gravar a integração"));
+    } finally {
+      setSavingPacs(false);
+    }
+  }
+
+  async function testPacsConnection() {
+    setTestingPacs(true);
+    try {
+      const r = await apiFetch<IntegrationPacsTestResponse>("/integration/pacs/test", {
+        method: "POST",
+      });
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.message);
+    } catch (err) {
+      toast.error(formatApiError(err, "Teste de ligação ao PACS falhou"));
+    } finally {
+      setTestingPacs(false);
+    }
+  }
 
   async function saveStudyReportUrl() {
     if (!reportEditor) return;
@@ -129,9 +231,10 @@ export default function AdminPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Administração</h1>
         <p className="text-muted-foreground">
-          Visão consolidada de utilizadores, pacientes, estudos e permissões. O URL do
-          laudo por estudo pode ser editado no separador Estudos sem usar linha de
-          comandos.
+          Visão consolidada de utilizadores, pacientes, estudos e permissões. A ligação ao
+          PACS Orthanc e a URL pública do portal configuram-se em{" "}
+          <strong className="font-medium text-foreground/85">Integração (PACS)</strong>.
+          O URL do laudo por estudo edita-se em Estudos.
         </p>
       </div>
       <Tabs defaultValue="users">
@@ -140,6 +243,10 @@ export default function AdminPage() {
           <TabsTrigger value="patients">Pacientes</TabsTrigger>
           <TabsTrigger value="studies">Estudos</TabsTrigger>
           <TabsTrigger value="perms">Permissões</TabsTrigger>
+          <TabsTrigger value="integration" className="gap-1">
+            <Globe className="size-3.5 opacity-80" aria-hidden />
+            Integração (PACS)
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="mt-4">
           <Card>
@@ -323,6 +430,286 @@ export default function AdminPage() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="integration" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex flex-wrap items-center gap-2">
+                Integração com o PACS (Orthanc)
+                {pacs ? (
+                  <Badge variant="outline" className="font-normal">
+                    Valor usado pela API · {pacs.resolved.pacsConfiguredVia === "database" ? "campos na base de dados" : "só variáveis de ambiente"}
+                  </Badge>
+                ) : null}
+              </CardTitle>
+              <CardDescription className="max-w-3xl space-y-2 text-sm leading-relaxed">
+                <span>
+                  A API usa DICOMweb (QIDO) para a lista de exames e REST para ingestão —
+                  não é necessário configurar «worklist» DICOM clássico (MWL). Define aqui o
+                  <strong className="text-foreground/90"> host/IP e porta </strong>a que{" "}
+                  <strong className="text-foreground/90">este servidor Nest</strong> consegue
+                  ligar (em Docker/Railway use o nome do serviço ou IP interno da rede).
+                </span>
+                <span className="block">
+                  Campos em branco («host») fazem uso só das variáveis{" "}
+                  <span className="font-mono text-xs">ORTHANC_*</span> no ambiente. A URL
+                  pública do portal é usada pelo OHIF (reescrita de links no JSON DICOM).
+                </span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!pacs ? (
+                <p className="text-sm text-muted-foreground">A carregar…</p>
+              ) : (
+                <>
+                  <div className="space-y-2 rounded-lg border border-border/70 bg-muted/15 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Resolvido pela API neste momento
+                    </p>
+                    <dl className="grid gap-2 text-xs sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <dt className="text-muted-foreground">DICOMweb (QIDO/WADO upstream)</dt>
+                        <dd className="break-all font-mono text-[11px] text-foreground">
+                          {pacs.resolved.dicomWebRoot}
+                        </dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-muted-foreground">REST Orthanc (/tools/find, /instances)</dt>
+                        <dd className="break-all font-mono text-[11px] text-foreground">
+                          {pacs.resolved.httpRoot}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">URL portal (OHIF)</dt>
+                        <dd className="break-all font-mono text-[11px] text-foreground">
+                          {pacs.resolved.webOriginEffective ?? "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Basic Auth</dt>
+                        <dd className="text-[11px] text-foreground">
+                          {pacs.resolved.effectiveBasicAuth ? "Configurado" : "Desligado"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border/70 bg-background/50 px-3 py-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="size-4 rounded border-border accent-primary"
+                        checked={pacsDraft.tls}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, tls: e.target.checked }))
+                        }
+                        disabled={savingPacs}
+                      />
+                      <span>HTTPS (TLS) no Orthanc</span>
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border/70 bg-background/50 px-3 py-3 text-sm sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        className="size-4 rounded border-border accent-primary"
+                        checked={pacsDraft.proxyDebug}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, proxyDebug: e.target.checked }))
+                        }
+                        disabled={savingPacs}
+                      />
+                      <span>
+                        Logs detalhados do proxy DICOMweb (equivale{" "}
+                        <span className="font-mono text-[11px]">DICOMWEB_PROXY_DEBUG=1</span>)
+                      </span>
+                    </label>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="bb-pacs-host">Host ou IP do PACS</Label>
+                      <Input
+                        id="bb-pacs-host"
+                        value={pacsDraft.host}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, host: e.target.value }))
+                        }
+                        placeholder='ex.: 192.168.1.40 ou orthanc.docker'
+                        className="font-mono text-sm border-border/80 bg-background/80"
+                        disabled={savingPacs}
+                        autoComplete="off"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Limpe o campo para voltar apenas ao URL em variáveis de ambiente na API.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bb-pacs-port">Porta REST / DICOMweb</Label>
+                      <Input
+                        id="bb-pacs-port"
+                        type="number"
+                        min={1}
+                        max={65535}
+                        value={pacsDraft.port}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({
+                            ...d,
+                            port: Math.min(
+                              65535,
+                              Math.max(1, Number(e.target.value) || 8042),
+                            ),
+                          }))
+                        }
+                        className="font-mono text-sm tabular-nums border-border/80 bg-background/80"
+                        disabled={savingPacs}
+                      />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="bb-pacs-dicom-path">Caminho DICOMweb</Label>
+                      <Input
+                        id="bb-pacs-dicom-path"
+                        value={pacsDraft.dicomPath}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, dicomPath: e.target.value }))
+                        }
+                        placeholder="/dicom-web"
+                        className="font-mono text-sm border-border/80 bg-background/80"
+                        disabled={savingPacs}
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bb-pacs-user">Utilizador Orthanc (opcional)</Label>
+                      <Input
+                        id="bb-pacs-user"
+                        value={pacsDraft.user}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, user: e.target.value }))
+                        }
+                        className="border-border/80 bg-background/80"
+                        disabled={savingPacs}
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bb-pacs-pwd">Nova palavra-passe (opcional)</Label>
+                      <Input
+                        id="bb-pacs-pwd"
+                        type="password"
+                        value={pacsPwdNew}
+                        onChange={(e) => setPacsPwdNew(e.target.value)}
+                        placeholder={
+                          pacs.orthancPasswordStored
+                            ? "Deixe vazio para manter"
+                            : "Credencial guardada apenas na BD"
+                        }
+                        className="border-border/80 bg-background/80"
+                        disabled={savingPacs}
+                        autoComplete="new-password"
+                      />
+                      {pacs.orthancPasswordStored ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          Existe palavra-passe na base de dados. Preencher acima substitui;
+                          assinalar abaixo remove.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border/70 bg-background/50 px-3 py-3 text-sm sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        className="size-4 rounded border-border accent-primary"
+                        checked={pacsClearPwd}
+                        onChange={(e) => setPacsClearPwd(e.target.checked)}
+                        disabled={savingPacs}
+                      />
+                      <span>Remover palavra-passe armazenada na base de dados</span>
+                    </label>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="bb-portal-origin">URL pública do portal (Next)</Label>
+                      <Input
+                        id="bb-portal-origin"
+                        value={pacsDraft.webOrigin}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, webOrigin: e.target.value }))
+                        }
+                        placeholder="https://portal.instituicao.pt"
+                        className="font-mono text-sm border-border/80 bg-background/80"
+                        disabled={savingPacs}
+                        autoComplete="off"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Usada pelo proxy DICOM e somada ao{" "}
+                        <span className="font-mono">WEB_ORIGIN</span> para CORS. Em produção
+                        prefira HTTPS; caso contrário o browser pode bloquear o OHIF.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bb-laudo-mfr">Fabricante DICOM (laudo PDF)</Label>
+                      <Input
+                        id="bb-laudo-mfr"
+                        value={pacsDraft.laudoMfr}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, laudoMfr: e.target.value }))
+                        }
+                        placeholder="Nome da instituição"
+                        disabled={savingPacs}
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bb-laudo-ser">Número de série DOC (laudo PDF)</Label>
+                      <Input
+                        id="bb-laudo-ser"
+                        value={pacsDraft.laudoSeries}
+                        onChange={(e) =>
+                          setPacsDraft((d) => ({ ...d, laudoSeries: e.target.value }))
+                        }
+                        placeholder="999"
+                        disabled={savingPacs}
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    As credenciais gravadas ficam na base PostgreSQL sem encriptação de
+                    aplicação; limite o acesso de administrador e HTTPS em todos os fluxos.
+                  </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      disabled={savingPacs}
+                      className="gap-2"
+                      onClick={() => void savePacsConfig()}
+                    >
+                      {savingPacs ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : null}
+                      Guardar integração
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={testingPacs || savingPacs}
+                      className="gap-2"
+                      onClick={() => void testPacsConnection()}
+                    >
+                      {testingPacs ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : null}
+                      Testar ligação (GET /system)
+                    </Button>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

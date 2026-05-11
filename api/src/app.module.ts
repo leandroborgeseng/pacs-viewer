@@ -11,6 +11,8 @@ import { HealthController, HealthzController, ApiRootController } from './health
 import { PatientsModule } from './patients/patients.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports/reports.module';
+import { IntegrationModule } from './integration/integration.module';
 import { StudiesModule } from './studies/studies.module';
 import { UsersModule } from './users/users.module';
 
@@ -24,6 +26,7 @@ import { UsersModule } from './users/users.module';
       },
     ]),
     PrismaModule,
+    IntegrationModule,
     AuthModule,
     UsersModule,
     PatientsModule,
@@ -31,6 +34,7 @@ import { UsersModule } from './users/users.module';
     PermissionsModule,
     AuditModule,
     DicomWebModule,
+    ReportsModule,
   ],
   controllers: [HealthController, HealthzController, ApiRootController],
   providers: [

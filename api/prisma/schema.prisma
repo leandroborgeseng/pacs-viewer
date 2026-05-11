@@ -91,3 +91,24 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+/// Configuração única da ligação ao PACS / portal público (UI admin). Fallback: variáveis de ambiente.
+model IntegrationSettings {
+  id                  String   @id @default("default")
+  orthancUseTls       Boolean  @default(false) @map("orthanc_use_tls")
+  /// IP ou hostname do Orthanc/PACS alcançável **pelo servidor da API**. Se vazio, usa ORTHANC_DICOMWEB_ROOT no .env.
+  orthancHost         String?  @map("orthanc_host")
+  orthancPort         Int      @default(8042) @map("orthanc_port")
+  /// Caminho público até ao plugin DICOMweb (Orthanc típ.: /dicom-web).
+  orthancDicomWebPath String   @default("/dicom-web") @map("orthanc_dicom_web_path")
+  orthancUsername     String?  @map("orthanc_username")
+  orthancPassword     String?  @map("orthanc_password") @db.Text
+  /// URL pública exacta do portal (Next.js) para reescrita de URLs no JSON DICOM OHIF — ex.: https://portal.exemplo.pt
+  webOriginPublic     String?  @map("web_origin_public") @db.Text
+  laudoManufacturer   String?  @map("laudo_manufacturer")
+  laudoSeriesNumber   String?  @map("laudo_series_number")
+  dicomProxyDebug     Boolean  @default(false) @map("dicom_proxy_debug")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("integration_settings")
+}

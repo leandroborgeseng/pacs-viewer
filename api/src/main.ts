@@ -2,7 +2,12 @@ import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import express from 'express';
 import { AppModule } from './app.module';
+import {
+  IntegrationService,
+  splitWebOrigins,
+} from './integration/integration.service';
 
 function assertRequiredEnv() {
   const missing: string[] = [];
@@ -35,8 +40,14 @@ function assertRequiredEnv() {
 
 async function bootstrap() {
   assertRequiredEnv();
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
   const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.use(express.json({ limit: '10mb' }));
+  expressApp.use(
+    express.urlencoded({ extended: true, limit: '2mb' }),
+  );
   expressApp.get('/', (_req, res) => {
     res.status(200).json({
       service: 'pacs-viewer-api',
@@ -52,54 +63,42 @@ async function bootstrap() {
       { path: 'healthz', method: RequestMethod.GET },
     ],
   });
-  const origin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
-  const origins = origin
-    .split(',')
-    .map((o) => o.trim().replace(/\/+$/, ''))
-    .filter(Boolean);
-  console.log(`[bootstrap] CORS: ${origins.join(' | ') || '(lista vazia — defina WEB_ORIGIN)'}`);
 
   const allowRailwayPublic =
     process.env.CORS_ALLOW_RAILWAY_PUBLIC !== '0' &&
     process.env.NODE_ENV === 'production';
 
-  function isRailwayPublicHostname(hostname: string): boolean {
-    return (
-      hostname === 'up.railway.app' || hostname.endsWith('.up.railway.app')
-    );
-  }
-
   app.enableCors({
-    origin: (requestOrigin, callback) => {
-      if (!requestOrigin) {
-        callback(null, true);
-        return;
-      }
-      const normalized = requestOrigin.replace(/\/+$/, '');
-      if (origins.includes(normalized)) {
-        callback(null, true);
-        return;
-      }
-      if (allowRailwayPublic) {
-        try {
-          const { hostname, protocol } = new URL(normalized);
-          if (protocol === 'https:' && isRailwayPublicHostname(hostname)) {
-            callback(null, true);
-            return;
-          }
-        } catch {
-          /* ignore */
+    origin: (
+      requestOrigin: string | undefined,
+      callback: (err: Error | null, allow?: boolean | string) => void,
+    ) => {
+      try {
+        const svc = app.get(IntegrationService);
+        if (!requestOrigin?.trim()) {
+          callback(null, true);
+          return;
         }
-      }
-      console.warn(
-        JSON.stringify({
-          event: 'cors.denied',
-          origin: normalized,
-          nodeEnv: process.env.NODE_ENV ?? null,
+        const normalized = requestOrigin.replace(/\/+$/, '');
+        const ok = svc.isBrowserOriginAllowed(normalized, {
+          nodeEnv: process.env.NODE_ENV,
           allowRailwayPublic,
-        }),
-      );
-      callback(null, false);
+        });
+        if (!ok) {
+          console.warn(
+            JSON.stringify({
+              event: 'cors.denied',
+              origin: normalized,
+              nodeEnv: process.env.NODE_ENV ?? null,
+              allowRailwayPublic,
+              corsAllowedSnapshot: svc.corsAllowedOrigins.join(' | '),
+            }),
+          );
+        }
+        callback(null, ok);
+      } catch {
+        callback(null, false);
+      }
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
@@ -116,31 +115,36 @@ async function bootstrap() {
   );
   const port = Number(process.env.PORT ?? 3000);
   const host = process.env.HOST ?? '0.0.0.0';
-  const orthancRoot =
-    process.env.ORTHANC_DICOMWEB_ROOT?.trim() ||
-    '(não definido — QIDO usará http://localhost:8042/dicom-web)';
-  console.log(`[bootstrap] ORTHANC_DICOMWEB_ROOT effective check: ${orthancRoot}`);
-  console.log(
-    `[bootstrap] WEB_ORIGIN effective check: ${process.env.WEB_ORIGIN?.trim() || '(vazio — sem reescrita de URLs DICOM JSON)'}`,
-  );
-  if (
-    process.env.NODE_ENV === 'production' &&
-    (!process.env.ORTHANC_DICOMWEB_ROOT?.trim() ||
-      /localhost|127\.0\.0\.1/i.test(process.env.ORTHANC_DICOMWEB_ROOT))
-  ) {
-    console.warn(
-      '[bootstrap] Aviso: em produção ORTHANC_DICOMWEB_ROOT está vazio ou aponta para localhost — o contentor da API não alcança o Orthanc do teu PC. Defina o URL público/privado do PACS nas variáveis do serviço API.',
-    );
-  }
-  if (
-    process.env.NODE_ENV === 'production' &&
-    !process.env.WEB_ORIGIN?.trim()
-  ) {
-    console.warn(
-      '[bootstrap] Aviso: WEB_ORIGIN vazio — o proxy DICOMweb não reescreve links nos JSON (OHIF pode falhar com CORS). Defina WEB_ORIGIN = URL público exacto do Next (portal).',
-    );
-  }
   await app.listen(port, host);
+
+  const integration = app.get(IntegrationService);
+  const corsListed = integration.corsAllowedOrigins.join(' | ');
+  console.log(
+    `[bootstrap] CORS efectivo (WEB_ORIGIN + Admin → Integração): ${corsListed || '(lista vazia)'}`,
+  );
+  integration.logBootstrapSummary();
+
+  const rEffective = integration.resolved;
+  if (
+    process.env.NODE_ENV === 'production' &&
+    /localhost|127\.0\.0\.1/i.test(rEffective.dicomWebRoot)
+  ) {
+    console.warn(
+      '[bootstrap] Aviso: URL DICOM/PACS efectivo aponta para localhost — o contentor cloud da API pode não alcançar esse host. Configure IP público/acessível em Administração → Integração (ou Orthanc nas variáveis do serviço).',
+    );
+  }
+
+  const webEff =
+    rEffective.webOriginPublic?.trim() ||
+    splitWebOrigins(process.env.WEB_ORIGIN)[0] ||
+    '';
+
+  if (process.env.NODE_ENV === 'production' && !webEff) {
+    console.warn(
+      '[bootstrap] Aviso: URL pública do portal vazia (WEB_ORIGIN e Integração). O OHIF pode falhar ao resolver WADO/links DICOM.',
+    );
+  }
+
   const railwayPortHint = [
     '',
     '========================================',

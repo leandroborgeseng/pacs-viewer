@@ -8,12 +8,19 @@ import {
   Columns3,
   Copy,
   ExternalLink,
+  FilePlus,
   FileText,
   ImageIcon,
+  Loader2,
   MoreHorizontal,
   Search,
 } from "lucide-react";
-import { apiFetch, formatApiError, type StudyRow } from "@/lib/api";
+import {
+  apiFetch,
+  formatApiError,
+  type PdfLaudoIngestResponse,
+  type StudyRow,
+} from "@/lib/api";
 import { openOhifStudyWindow } from "@/lib/ohif-window";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
@@ -46,6 +53,7 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -79,6 +87,22 @@ export default function ExamesPage() {
     open: false,
     url: null,
     title: "Laudo",
+  });
+  const canWriteLaudo = user?.role === "MEDICO" || user?.role === "ADMIN";
+  const [pdfLaudoSheet, setPdfLaudoSheet] = useState<{
+    open: boolean;
+    studyInstanceUID: string | null;
+    patientLabel: string;
+    title: string;
+    text: string;
+    saving: boolean;
+  }>({
+    open: false,
+    studyInstanceUID: null,
+    patientLabel: "",
+    title: "",
+    text: "",
+    saving: false,
   });
 
   useEffect(() => {
@@ -176,6 +200,55 @@ export default function ExamesPage() {
     }
   }
 
+  async function submitPdfLaudoToPacs() {
+    if (!token) {
+      toast.error("Sessão inválida. Volte a iniciar sessão.");
+      return;
+    }
+    const uid = pdfLaudoSheet.studyInstanceUID;
+    const bodyText = pdfLaudoSheet.text.trim();
+    if (!uid || !bodyText) {
+      toast.error("Escreva o texto do laudo antes de gravar.");
+      return;
+    }
+    setPdfLaudoSheet((p) => ({ ...p, saving: true }));
+    try {
+      await apiFetch<PdfLaudoIngestResponse>(
+        `/reports/studies/${encodeURIComponent(uid)}/pdf`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            text: bodyText,
+            ...(pdfLaudoSheet.title.trim()
+              ? { title: pdfLaudoSheet.title.trim() }
+              : {}),
+          }),
+        },
+        token,
+      );
+      toast.success("Laudo gravado como PDF encapsulado DICOM no PACS (nova série).");
+      setPdfLaudoSheet({
+        open: false,
+        studyInstanceUID: null,
+        patientLabel: "",
+        title: "",
+        text: "",
+        saving: false,
+      });
+      try {
+        const data = await apiFetch<StudyRow[]>("/studies/me", {}, token);
+        setRows(data);
+      } catch {
+        toast.warning(
+          "Laudo gravado; atualize ou volte à página se a lista não atualizar.",
+        );
+      }
+    } catch (err) {
+      toast.error(formatApiError(err, "Não foi possível gravar o laudo no PACS"));
+      setPdfLaudoSheet((p) => ({ ...p, saving: false }));
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -184,7 +257,8 @@ export default function ExamesPage() {
           Worklist institucional alinhada ao PACS · leitura de imagens no OHIF{" "}
           <strong className="font-medium text-foreground/90">em janela dedicada</strong>.
           Dica: use o menu <strong className="text-foreground/85">⋯</strong> em cada linha para
-          copiar UID ou abrir o laudo registado na base do portal (quando existir).
+          copiar UID, abrir laudo registado na base do portal ou, como médico ou administrador,
+          criar um <strong className="text-foreground/85">laudo PDF</strong> que é enviado ao PACS.
         </p>
       </div>
 
@@ -491,6 +565,28 @@ export default function ExamesPage() {
                                   <Copy className="size-3.5" aria-hidden />
                                   Copiar Study UID
                                 </DropdownMenuItem>
+                                {canWriteLaudo ? (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        setPdfLaudoSheet({
+                                          open: true,
+                                          studyInstanceUID: s.studyInstanceUID,
+                                          patientLabel: s.patient.fullName,
+                                          title:
+                                            `Laudo · ${s.patient.fullName}`.slice(0, 120),
+                                          text: "",
+                                          saving: false,
+                                        })
+                                      }
+                                      className="gap-2"
+                                    >
+                                      <FilePlus className="size-3.5" aria-hidden />
+                                      Novo laudo PDF (PACS)
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : null}
                                 {s.reportUrl ? (
                                   <>
                                     <DropdownMenuSeparator />
@@ -531,6 +627,102 @@ export default function ExamesPage() {
           )}
         </CardContent>
       </Card>
+
+      <Sheet
+        open={pdfLaudoSheet.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPdfLaudoSheet({
+              open: false,
+              studyInstanceUID: null,
+              patientLabel: "",
+              title: "",
+              text: "",
+              saving: false,
+            });
+          } else {
+            setPdfLaudoSheet((prev) => ({ ...prev, open: true }));
+          }
+        }}
+      >
+        <SheetContent side="right" className="flex w-full flex-col sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Novo laudo (PDF no PACS)</SheetTitle>
+            <SheetDescription>
+              Gera PDF, encapsula como DICOM e associa ao estudo{" "}
+              <span className="font-medium text-foreground/90">
+                {pdfLaudoSheet.patientLabel || "—"}
+              </span>
+              . Confirme sempre o paciente antes de gravar.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2">
+            <div className="space-y-2">
+              <Label htmlFor="bb-laudo-pdf-title">Título no PDF</Label>
+              <Input
+                id="bb-laudo-pdf-title"
+                value={pdfLaudoSheet.title}
+                onChange={(e) =>
+                  setPdfLaudoSheet((p) => ({ ...p, title: e.target.value }))
+                }
+                placeholder="Opcional · ex.: Laudo RM joelho"
+                className="border-border/80 bg-background/80"
+                disabled={pdfLaudoSheet.saving}
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex min-h-[200px] flex-1 flex-col gap-2">
+              <Label htmlFor="bb-laudo-pdf-text">Texto do laudo</Label>
+              <textarea
+                id="bb-laudo-pdf-text"
+                value={pdfLaudoSheet.text}
+                onChange={(e) =>
+                  setPdfLaudoSheet((p) => ({ ...p, text: e.target.value }))
+                }
+                placeholder="Digite o laudo clínico…"
+                disabled={pdfLaudoSheet.saving}
+                rows={14}
+                className="flex min-h-[180px] w-full flex-1 resize-y rounded-md border border-border/80 bg-background/80 px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+          <SheetFooter className="flex-row flex-wrap gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pdfLaudoSheet.saving}
+              onClick={() =>
+                setPdfLaudoSheet({
+                  open: false,
+                  studyInstanceUID: null,
+                  patientLabel: "",
+                  title: "",
+                  text: "",
+                  saving: false,
+                })
+              }
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                pdfLaudoSheet.saving || !pdfLaudoSheet.text.trim()
+              }
+              onClick={() => void submitPdfLaudoToPacs()}
+            >
+              {pdfLaudoSheet.saving ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                  A gravar…
+                </>
+              ) : (
+                "Gravar no PACS"
+              )}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <Sheet
         open={laudo.open}

@@ -12,6 +12,10 @@ import type { Request, Response } from 'express';
 import { DicomAccessService } from './dicom-access.service';
 import { RequestUser } from '../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
+import {
+  IntegrationService,
+  splitWebOrigins,
+} from '../integration/integration.service';
 
 const STUDY_UID_TAG = '0020000D';
 
@@ -25,43 +29,41 @@ export class DicomWebService implements OnModuleInit {
     private http: HttpService,
     private config: ConfigService,
     private access: DicomAccessService,
+    private integration: IntegrationService,
   ) {}
 
   onModuleInit() {
-    const web = this.config.get<string>('WEB_ORIGIN')?.trim();
-    const orthanc = this.upstreamBase();
-    const proxyDebug =
-      String(this.config.get<string>('DICOMWEB_PROXY_DEBUG') ?? '').trim() ===
-      '1';
-    /* Log estável no deploy — procure "dicomweb.bootstrap" nos logs Railway/Docker. */
+    const wo = splitWebOrigins(this.config.get<string>('WEB_ORIGIN'));
+    const r = this.integration.resolved;
+    const webEff =
+      (r.webOriginPublic?.trim().replace(/\/+$/, '') || wo[0] || '').trim() ||
+      null;
+    const proxyDebug = r.dicomProxyDebug;
     this.logJson({
       event: 'dicomweb.bootstrap',
-      WEB_ORIGIN_set: Boolean(web && web.length > 0),
-      browser_proxy_dicomweb:
-        web && web.length > 0 ? `${web.replace(/\/+$/, '')}/bb-api/dicomweb` : null,
-      ORTHANC_DICOMWEB_ROOT: orthanc,
-      DICOMWEB_PROXY_DEBUG: proxyDebug,
-      ...(web && web.length > 0
+      WEB_ORIGIN_env_defined: wo.length > 0,
+      web_origin_database_defined: Boolean(r.webOriginPublic?.trim()),
+      browser_proxy_dicomweb: webEff
+        ? `${webEff.replace(/\/+$/, '')}/bb-api/dicomweb`
+        : null,
+      ORTHANC_DICOMWEB_ROOT_effective: r.dicomWebRoot,
+      pacs_configured_via: r.pacsConfiguredVia,
+      DICOMWEB_PROXY_DEBUG_effective: proxyDebug,
+      ...(webEff
         ? {}
         : {
             problem:
-              'Sem WEB_ORIGIN o proxy não reescreve URLs 00081190 no JSON; o OHIF pode pedir dados ao hostname do Orthanc e falhar (CORS/CSP/mixed content).',
+              'Sem URL do portal (.env WEB_ORIGIN ou Admin → Integração) o proxy não reescreve URLs 00081190 no JSON; o OHIF pode falhar (CORS).',
           }),
     });
   }
 
   private proxyDebugEnabled(): boolean {
-    return (
-      String(this.config.get<string>('DICOMWEB_PROXY_DEBUG') ?? '').trim() ===
-      '1'
-    );
+    return this.integration.resolved.dicomProxyDebug;
   }
 
   private upstreamBase(): string {
-    const base =
-      this.config.get<string>('ORTHANC_DICOMWEB_ROOT') ??
-      'http://localhost:8042/dicom-web';
-    return base.replace(/\/$/, '');
+    return this.integration.resolved.dicomWebRoot;
   }
 
   /**
@@ -69,7 +71,12 @@ export class DicomWebService implements OnModuleInit {
    * Sem isto, metadados Orthanc trazem http(s)://orthanc/... e o OHIF falha (CORS/CSP).
    */
   private browserPublicDicomwebRoot(): string | null {
-    const web = this.config.get<string>('WEB_ORIGIN')?.trim().replace(/\/+$/, '');
+    const r = this.integration.resolved;
+    const prim =
+      (r.webOriginPublic?.trim().replace(/\/+$/, '') ||
+        splitWebOrigins(this.config.get<string>('WEB_ORIGIN'))[0]) ??
+      '';
+    const web = prim.trim().replace(/\/+$/, '');
     if (!web) return null;
     return `${web}/bb-api/dicomweb`;
   }
@@ -148,8 +155,8 @@ export class DicomWebService implements OnModuleInit {
           contentType,
           hint:
             response.status === 401 || response.status === 403
-              ? 'Orthanc pode exigir ORTHANC_USERNAME/PASSWORD na API.'
-              : 'Confirmar plugin DICOMweb e URL em ORTHANC_DICOMWEB_ROOT.',
+              ? 'Credenciais do PACS conferem-se em Administração → Integração (ou orthanc_* no .env).'
+              : 'Confirmar plugin DICOMweb, IP/porta e caminho até /dicom-web nas definições de integração.',
         });
       }
       const p = upstreamUrl.pathname;
@@ -197,7 +204,7 @@ export class DicomWebService implements OnModuleInit {
         error: err instanceof Error ? err.message : String(err),
       });
       throw new ServiceUnavailableException(
-        'Orthanc/DICOMweb indisponível. Verifique ORTHANC_DICOMWEB_ROOT.',
+        'Orthanc/DICOMweb indisponível. Verifique IP/porta, URL DICOMweb e credenciais (Administração → Integração).',
       );
     }
   }
@@ -271,8 +278,9 @@ export class DicomWebService implements OnModuleInit {
       if (Array.isArray(v)) forward[k] = v.join(', ');
       else forward[k] = v;
     }
-    const user = this.config.get<string>('ORTHANC_USERNAME');
-    const pass = this.config.get<string>('ORTHANC_PASSWORD');
+    const r = this.integration.resolved;
+    const user = r.orthancUsername;
+    const pass = r.orthancPassword;
     if (user && pass) {
       const token = Buffer.from(`${user}:${pass}`).toString('base64');
       forward['authorization'] = `Basic ${token}`;
@@ -341,8 +349,9 @@ export class DicomWebService implements OnModuleInit {
           this.logger.warn(
             JSON.stringify({
               event: 'dicomweb.rewrite_skipped',
-              reason: 'WEB_ORIGIN empty or unset',
-              fix: 'Set WEB_ORIGIN to the portal public URL (e.g. https://app.example.com). Restart API.',
+              reason:
+                'URL pública do portal vazia (Admin Integração ou WEB_ORIGIN)',
+              fix: 'Defina URL pública do portal na administração ou WEB_ORIGIN.',
             }),
           );
         }

@@ -1,8 +1,8 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { isAxiosError } from 'axios';
+import { IntegrationService } from '../integration/integration.service';
 
 /** Cliente mínimo para QIDO-RS no Orthanc (catálogo de estudos). */
 @Injectable()
@@ -11,22 +11,20 @@ export class OrthancDicomWebClient {
 
   constructor(
     private readonly http: HttpService,
-    private readonly config: ConfigService,
+    private readonly integration: IntegrationService,
   ) {}
 
   private baseUrl(): string {
-    const base =
-      this.config.get<string>('ORTHANC_DICOMWEB_ROOT') ??
-      'http://localhost:8042/dicom-web';
-    return base.replace(/\/$/, '');
+    return this.integration.resolved.dicomWebRoot;
   }
 
   private upstreamHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       Accept: 'application/dicom+json',
     };
-    const user = this.config.get<string>('ORTHANC_USERNAME');
-    const pass = this.config.get<string>('ORTHANC_PASSWORD');
+    const r = this.integration.resolved;
+    const user = r.orthancUsername;
+    const pass = r.orthancPassword;
     if (user && pass) {
       headers['Authorization'] =
         `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;

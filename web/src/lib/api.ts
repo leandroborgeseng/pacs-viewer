@@ -91,6 +91,11 @@ export type StudiesMeSummary = {
   modalityTop: { modality: string; count: number }[];
 };
 
+export type PdfLaudoIngestResponse = {
+  orthancInstanceId: string;
+  sopInstanceUid: string;
+};
+
 export type StudyRow = {
   id: string;
   studyInstanceUID: string;
@@ -105,4 +110,39 @@ export type StudyRow = {
     fullName: string;
     medicalRecordNumber: string;
   };
+};
+
+export type IntegrationResolvedPacs = {
+  pacsConfiguredVia: "database" | "environment";
+  dicomWebRoot: string;
+  httpRoot: string;
+  orthancUsername?: string;
+  webOriginPublic?: string;
+  laudoManufacturer?: string;
+  laudoSeriesNumber?: string;
+  dicomProxyDebug: boolean;
+};
+
+export type IntegrationPacsAdminDto = {
+  orthancUseTls: boolean;
+  orthancHost: string | null;
+  orthancPort: number;
+  orthancDicomWebPath: string;
+  orthancUsername: string | null;
+  orthancPasswordStored: boolean;
+  webOriginPublic: string | null;
+  laudoManufacturer: string | null;
+  laudoSeriesNumber: string | null;
+  dicomProxyDebug: boolean;
+  resolved: IntegrationResolvedPacs & {
+    webOriginEffective?: string;
+    effectiveBasicAuth: boolean;
+  };
+};
+
+export type IntegrationPacsTestResponse = {
+  ok: boolean;
+  httpStatus?: number;
+  orthancReachable?: boolean;
+  message: string;
 };

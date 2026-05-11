@@ -32,7 +32,7 @@ export class ApiRootController {
     return {
       service: 'pacs-viewer-api',
       message:
-        'REST sob o prefixo /api. Ex.: POST /api/auth/login, GET /api/auth/me, GET /api/studies/me, GET /api/studies/me/summary',
+        'REST sob o prefixo /api. Ex.: POST /api/auth/login, GET /api/auth/me, GET /api/studies/me, POST /api/reports/studies/{StudyInstanceUID}/pdf (laudo PDF→DICOM, médico/admin).',
       health: '/health',
       healthz: '/healthz',
     };
