@@ -112,3 +112,21 @@ model IntegrationSettings {
 
   @@map("integration_settings")
 }
+
+/// Selo sintético (HMAC) para verificar registo institucional do laudo; não é assinatura qualificada.
+model ReportLaudoSeal {
+  id                 String   @id @default(uuid())
+  verifyCode         String   @unique @map("verify_code") @db.VarChar(48)
+  studyInstanceUid   String   @map("study_instance_uid")
+  sopInstanceUid     String   @map("sop_instance_uid")
+  issuerUserId       String   @map("issuer_user_id")
+  issuerEmail        String   @map("issuer_email")
+  canonicalPayload   String   @map("canonical_payload") @db.Text
+  sealMacHex         String   @map("seal_mac_hex") @db.VarChar(64)
+  pdfBinarySha256Hex String   @map("pdf_binary_sha256_hex") @db.VarChar(64)
+  orthancInstanceId  String?  @map("orthanc_instance_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([studyInstanceUid])
+  @@map("report_laudo_seals")
+}

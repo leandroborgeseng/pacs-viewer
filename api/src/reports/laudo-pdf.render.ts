@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit';
 
 /** Fallback seguro quando não há TTF próprio embutido: remove diacríticos para Helvetica PDF. */
-function asciiClinicalText(raw: string): string {
+export function asciiClinicalText(raw: string): string {
   return raw
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

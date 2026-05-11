@@ -213,7 +213,7 @@ export default function ExamesPage() {
     }
     setPdfLaudoSheet((p) => ({ ...p, saving: true }));
     try {
-      await apiFetch<PdfLaudoIngestResponse>(
+      const res = await apiFetch<PdfLaudoIngestResponse>(
         `/reports/studies/${encodeURIComponent(uid)}/pdf`,
         {
           method: "POST",
@@ -226,7 +226,10 @@ export default function ExamesPage() {
         },
         token,
       );
-      toast.success("Laudo gravado como PDF encapsulado DICOM no PACS (nova série).");
+      toast.success("Laudo gravado no PACS.", {
+        description: `Verificar: ${res.verificationUrl} (código ${res.verifyCode}).`,
+        duration: 14_000,
+      });
       setPdfLaudoSheet({
         open: false,
         studyInstanceUID: null,

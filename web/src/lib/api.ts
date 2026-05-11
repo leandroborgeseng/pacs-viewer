@@ -94,6 +94,18 @@ export type StudiesMeSummary = {
 export type PdfLaudoIngestResponse = {
   orthancInstanceId: string;
   sopInstanceUid: string;
+  verifyCode: string;
+  verificationUrl: string;
+};
+
+export type ReportLaudoVerifyResponse = {
+  known: boolean;
+  cryptographicIntegrity: boolean;
+  studyInstanceUid?: string;
+  sopInstanceUid?: string;
+  issuedAtUtc?: string;
+  issuerEmailMasked?: string;
+  pdfBinarySha256Short?: string;
 };
 
 export type StudyRow = {
