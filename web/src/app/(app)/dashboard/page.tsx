@@ -73,10 +73,6 @@ export default function DashboardPage() {
           Bem-vindo
         </p>
         <h1 className="text-3xl font-semibold tracking-tight">{user?.name}</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Consola clínica BlueBeaver: catálogo de estudos, leitura no visualizador DICOM e
-          tráfego DICOMweb sempre mediado pelo seu backend.
-        </p>
       </div>
 
       <section className="space-y-3">
