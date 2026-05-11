@@ -96,6 +96,58 @@ export class OrthancRestClient {
     }
   }
 
+  /**
+   * Study Description (mesmo texto que aparece sob `MainDicomTags` no explorador Orthanc).
+   * Não falha o catálogo: devolve null se não houver recurso REST, ausência ou erro de rede.
+   */
+  async tryStudyDescriptionByStudyInstanceUID(
+    studyInstanceUID: string,
+  ): Promise<string | null> {
+    const uid = studyInstanceUID.trim();
+    if (!uid) return null;
+    let orthancStudyIds: string[];
+    try {
+      orthancStudyIds = await this.findStudiesByStudyInstanceUID(uid);
+    } catch (e) {
+      this.logger.debug(
+        JSON.stringify({
+          event: 'orthanc.study_desc_rest_find_skip',
+          studyInstanceUID: uid,
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      );
+      return null;
+    }
+    const orthancId = orthancStudyIds[0];
+    if (!orthancId?.length) return null;
+
+    const root = this.restRoot();
+    const url = `${root}/studies/${encodeURIComponent(orthancId)}`;
+    try {
+      const resp = await firstValueFrom(
+        this.http.get<Record<string, unknown>>(url, {
+          headers: this.upstreamHeaders(),
+          validateStatus: () => true,
+        }),
+      );
+      if (resp.status !== 200 || !resp.data || typeof resp.data !== 'object')
+        return null;
+      const main = resp.data.MainDicomTags as Record<string, unknown> | undefined;
+      if (!main || typeof main !== 'object') return null;
+      const v = main.StudyDescription;
+      return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null;
+    } catch (e) {
+      this.logger.debug(
+        JSON.stringify({
+          event: 'orthanc.study_desc_rest_get_skip',
+          studyInstanceUID: uid,
+          message: e instanceof Error ? e.message : String(e),
+        }),
+      );
+      return null;
+    }
+  }
+
   /** Agrega etiquetas paciente/estudo expostas pelo Orthanc. */
   async getStudyClinicalTagsForLaudo(orthancStudyId: string): Promise<OrthancStudyTags> {
     const root = this.restRoot();

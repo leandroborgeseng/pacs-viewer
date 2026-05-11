@@ -125,7 +125,54 @@ export class StudiesService {
     }
 
     const merged = await this.mergePortalStudyExtras(scoped);
-    return this.sortStudyRows(merged);
+    const enriched = await this.backfillStudyDescriptionFromOrthancRestIfMissing(merged);
+    return this.sortStudyRows(enriched);
+  }
+
+  /**
+   * O explorador Orthanc lê estudo sob `MainDicomTags`; o catálogo vem antes do QIDO (`/studies`).
+   * Quando `(0008,1030)` vem sem `Value` ou omissa no DICOM JSON, preenchemos a partir do REST.
+   */
+  private async backfillStudyDescriptionFromOrthancRestIfMissing(
+    rows: StudyCatalogRow[],
+  ): Promise<StudyCatalogRow[]> {
+    const maxRaw = this.configService.get<string | undefined>(
+      'STUDIES_REST_STUDY_DESC_BACKFILL_MAX',
+    );
+    const maxUids = parseInt(String(maxRaw ?? '500'), 10);
+    if (!Number.isFinite(maxUids) || maxUids <= 0) return rows;
+
+    const uidNeedSet = [
+      ...new Set(
+        rows
+          .filter((r) => !(r.studyDescription?.trim()))
+          .map((r) => r.studyInstanceUID),
+      ),
+    ].slice(0, maxUids);
+    if (uidNeedSet.length === 0) return rows;
+
+    const descByUid = new Map<string, string>();
+    const chunkSize = 16;
+    for (let i = 0; i < uidNeedSet.length; i += chunkSize) {
+      const chunk = uidNeedSet.slice(i, i + chunkSize);
+      const parts = await Promise.all(
+        chunk.map(async (uid) => ({
+          uid,
+          desc: await this.orthancRest.tryStudyDescriptionByStudyInstanceUID(uid),
+        })),
+      );
+      for (const { uid, desc } of parts) {
+        const t = desc?.trim();
+        if (t?.length) descByUid.set(uid, t);
+      }
+    }
+
+    return rows.map((r) => {
+      if (r.studyDescription?.trim()) return r;
+      const d = descByUid.get(r.studyInstanceUID);
+      if (!d) return r;
+      return { ...r, studyDescription: d };
+    });
   }
 
   /** Um snapshot QIDO partilhado por todos os utilizadores até expirar (mesmo TTL que `STUDIES_CATALOG_CACHE_MS`). */
