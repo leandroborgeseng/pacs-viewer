@@ -1,0 +1,105 @@
+# BlueBeaver — pilha para Coolify (Docker Compose, opção 1).
+# Guia completo: docs/coolify.md
+#
+# No Coolify: Resource → Docker Compose → caminho deste arquivo.
+# Contexto de build = raiz do repositório (monorepo). Não publique portas manualmente;
+# associe domínios HTTPS aos serviços `web` e `api` no painel.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-portal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-portal}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-portal} -d ${POSTGRES_DB:-portal}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-portal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-portal}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET}
+      JWT_EXPIRES_SEC: ${JWT_EXPIRES_SEC:-28800}
+      WEB_ORIGIN: ${WEB_ORIGIN:?Defina WEB_ORIGIN — URL HTTPS do portal, sem barra no fim}
+      ORTHANC_DICOMWEB_ROOT: ${ORTHANC_DICOMWEB_ROOT:?Defina ORTHANC_DICOMWEB_ROOT — URL DICOMweb alcançável a partir deste container}
+      ORTHANC_USERNAME: ${ORTHANC_USERNAME:-}
+      ORTHANC_PASSWORD: ${ORTHANC_PASSWORD:-}
+      SEED_STUDY_INSTANCE_UID: ${SEED_STUDY_INSTANCE_UID:-}
+      SKIP_DB_SEED: ${SKIP_DB_SEED:-1}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      CORS_ALLOW_RAILWAY_PUBLIC: ${CORS_ALLOW_RAILWAY_PUBLIC:-0}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 120s
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Defina NEXT_PUBLIC_API_URL — URL pública da API com /api}
+        NEXT_PUBLIC_OHIF_BASE_PATH: ${NEXT_PUBLIC_OHIF_BASE_PATH:-/ohif}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_OHIF_BASE_PATH: ${NEXT_PUBLIC_OHIF_BASE_PATH:-/ohif}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 60s
+
+  # Orthanc local opcional — ative com: docker compose --profile local-pacs ...
+  orthanc:
+    image: jodogne/orthanc-plugins:1.12.4
+    restart: unless-stopped
+    profiles:
+      - local-pacs
+    volumes:
+      - orthanc:/var/lib/orthanc/db
+
+volumes:
+  pgdata:
+  orthanc:

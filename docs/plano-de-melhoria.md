@@ -24,6 +24,7 @@ Este plano estrutura evoluções do monorepo `pacs-viewer`. Itens marcados como 
 ## Convenções
 
 - **Railway:** serviço **API** → `Dockerfile` na raiz OU `api/railway.json` com `SKIP_DB_SEED=1` quando não quiser demo seed. Serviço **Web** → `web/Dockerfile` + `web/railway.json`.
+- **Coolify (Compose):** `docker-compose.coolify.yml` + `docs/coolify.md` — um recurso com `web` + `api` + `db`.
 - Lint local API: `npm run lint` (com `--fix`).
 
 ---
